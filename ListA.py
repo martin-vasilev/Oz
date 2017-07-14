@@ -11,11 +11,11 @@ Eye-tracking experiment following Eyetrack's convention
 
 # import settings and libraries:
 from constants import * # all experiment settings
-import pylink
-from psychopy import prefs
+#import pylink
+#from psychopy import prefs
 #prefs.general['audioLib']= ['pygame']
 from psychopy.visual import *
-import random
+#import random
 from psychopy import core
 from psychopy.core import *
 from psychopy.event import waitKeys, Mouse, getKeys
@@ -118,7 +118,7 @@ while not Story1End: # for each of the trials
 
 		# print text stimuli to edf:
 		if item in hasText:
-			stim2edf(tracker, 'DorothyText/Dorothy' + str(item)+'.txt', offsetX, Pix_per_Letter)
+			stim2edf(tracker, 'DorothyText/Dorothy' + str(item)+'.txt', offsetX, Pix_per_Letter, yStart)
 		#stim2edf(sentenceString, sentPos, tracker)
 		
 		# drift check:
@@ -241,7 +241,7 @@ while not Story2End: # for each of the trials
 
 		# print text stimuli to edf:
 		if item-25 in hasText:
-			stim2edf(tracker, 'TiktokText/Tiktok' + str(item-25)+'.txt', offsetX, Pix_per_Letter)
+			stim2edf(tracker, 'TiktokText/Tiktok' + str(item-25)+'.txt', offsetX, Pix_per_Letter, yStart)
 		#stim2edf(sentenceString, sentPos, tracker)
 		
 		# drift check:
