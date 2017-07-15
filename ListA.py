@@ -57,20 +57,20 @@ globalClock= core.Clock()
 #--------------
 
 #FileID= open(expDir+'\instructions.txt', 'r')
-FileID= open('instructions.txt', 'r')
-Instring= FileID.read()
-Instring= Instring + '\n\nPress any key to continue'
+#FileID= open('instructions.txt', 'r')
+#Instring= FileID.read()
+#Instring= Instring + '\n\nPress any key to continue'
 
-scr.draw_text(text= Instring, colour= FGC, font= Font, center=True, fontsize=TextSize)
+#scr.draw_text(text= Instring, colour= FGC, font= Font, center=True, fontsize=TextSize)
 
-disp.fill(scr)
-disp.show()
+#disp.fill(scr)
+#disp.show()
 
 # wait for a response:
-resplist = waitKeys(maxWait=float('inf'))
-scr.clear()
-disp.fill(scr)
-disp.show()
+#resplist = waitKeys(maxWait=float('inf'))
+#scr.clear()
+#disp.fill(scr)
+#disp.show()
 
 # Initialize Eye-tracker:
 tracker= EyeTracker(disp, trackertype= 'eyelink',resolution= DISPSIZE, fgc= FGC, bgc= BGC,
@@ -109,12 +109,17 @@ while not Story1End: # for each of the trials
 	stimuliOn= False
 	
 	while not stimuliOn: # repeats loop until gazebox is triggered within x seconds
-	
-		#print trial ID in EDF file:
-		tracker.log('TRIALID E%dI%dD0' % (Story1cond, item))
-		# print trial ID on tracker screen:
-		tracker.status_msg('TRIAL E%dI%dD0' % (Story1cond, item)) 
 		
+		if item in hasText:
+			#print trial ID in EDF file:
+			tracker.log('TRIALID E%dI%dD0' % (Story1cond, item))
+			# print trial ID on tracker screen:
+			tracker.status_msg('TRIAL E%dI%dD0' % (Story1cond, item)) 
+		else:
+			#print trial ID in EDF file:
+			tracker.log('TRIALID P%dI%dD0' % (Story1cond, item))
+			# print trial ID on tracker screen:
+			tracker.status_msg('TRIAL P%dI%dD0' % (Story1cond, item)) 			
 
 		# print text stimuli to edf:
 		if item in hasText:
@@ -135,7 +140,7 @@ while not Story1End: # for each of the trials
 		Gazescr.draw_rect(colour=FGC, x=offsetX, y=GazeBoxY, w=GazeBoxSize,
 					h=GazeBoxSize, pw=1, fill=True)
 		gazeBnds_x= (offsetX, offsetX+GazeBoxSize)
-		gazeBnds_y= (DISPSIZE[1]/2-GazeBoxSize/2, DISPSIZE[1]/2-GazeBoxSize/2+GazeBoxSize)
+		gazeBnds_y= (GazeBoxY, GazeBoxY+GazeBoxSize)
 		# display gaze box:
 		disp.fill(Gazescr)
 		
@@ -219,6 +224,13 @@ while not Story1End: # for each of the trials
 	#DorothyEnd= item==3
 
 
+################
+#  Questions:  #
+################
+
+for i in range(0,5):
+	Quest(disp, scr, tracker, DorothyQ[i], i+1, DorothyAns[i])
+
 ########################
 #     Second story     #
 ########################
@@ -232,13 +244,18 @@ while not Story2End: # for each of the trials
 	stimuliOn= False
 	
 	while not stimuliOn: # repeats loop until gazebox is triggered within x seconds
-	
-		#print trial ID in EDF file:
-		tracker.log('TRIALID E%dI%dD0' % (Story2cond, item))
-		# print trial ID on tracker screen:
-		tracker.status_msg('TRIAL E%dI%dD0' % (Story2cond, item)) 
 		
-
+		if item-25 in hasText:
+			#print trial ID in EDF file:
+			tracker.log('TRIALID E%dI%dD0' % (Story2cond, item))
+			# print trial ID on tracker screen:
+			tracker.status_msg('TRIAL E%dI%dD0' % (Story2cond, item)) 
+		else:
+			#print trial ID in EDF file:
+			tracker.log('TRIALID P%dI%dD0' % (Story2cond, item))
+			# print trial ID on tracker screen:
+			tracker.status_msg('TRIAL P%dI%dD0' % (Story2cond, item)) 
+			
 		# print text stimuli to edf:
 		if item-25 in hasText:
 			stim2edf(tracker, 'TiktokText/Tiktok' + str(item-25)+'.txt', offsetX, Pix_per_Letter, yStart)
@@ -258,7 +275,7 @@ while not Story2End: # for each of the trials
 		Gazescr.draw_rect(colour=FGC, x=offsetX, y=GazeBoxY, w=GazeBoxSize,
 					h=GazeBoxSize, pw=1, fill=True)
 		gazeBnds_x= (offsetX, offsetX+GazeBoxSize)
-		gazeBnds_y= (DISPSIZE[1]/2-GazeBoxSize/2, DISPSIZE[1]/2-GazeBoxSize/2+GazeBoxSize)
+		gazeBnds_y= (GazeBoxY, GazeBoxY+GazeBoxSize)
 		# display gaze box:
 		disp.fill(Gazescr)
 		
@@ -340,6 +357,13 @@ while not Story2End: # for each of the trials
 
 	Story2End= item==25+26+1
 	#DorothyEnd= item==3
+
+################
+#  Questions:  #
+################
+
+for i in range(5,10):
+	Quest(disp, scr, tracker, TiktokQ[i-5], i+1, TiktokAns[i-5])
 
 
 tracker.close()
