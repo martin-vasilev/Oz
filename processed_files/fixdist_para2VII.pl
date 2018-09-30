@@ -82,7 +82,7 @@ while ($filename = <LISTFILE>)
   {
     chomp ($filename);
     open (INDATA, $filename) or die "Can't open datafile: $!\n";
-    $sub = $filename;
+    $sub = substr($filename,0,-5);
     $trialnum = 0;
     print "Data file name:\t$filename\n";
     while ($line = <INDATA>) 
