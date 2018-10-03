@@ -44,6 +44,8 @@ dat<- dat[-out, ]
 
 
 # Comprehension accuracy:
+
+# Note: questions 1-5 are from "Dorothy" and questions 6-10 are from "Tiktok".
 q <- read.csv("data/OZquest.csv", na.strings = "na")
 q$condition<- factor(q$condition)
 levels(q$condition)<- c("Normal","Bold")
@@ -58,9 +60,14 @@ DesQ<- melt(q, id=c('subject', 'item', 'condition'),
 mQ<- cast(DesQ, condition ~ variable
               , function(x) c(M=signif(mean(x),3)
                               , SD= sd(x) ))
+# subject average accuracy:
+mQ2<- cast(DesQ, subject ~ variable
+          , function(x) c(M=signif(mean(x),3)
+                          , SD= sd(x) ))
 
 # Accuracy model:
 if(!file.exists("Models/GM1.Rda")){
+  # model does not converge with a random slope for items.
   GM1<- glmer(accuracy ~ condition + (condition|subject)+ (1|item), family= binomial, data=q)
   save(GM1, file= "Models/GM1.Rda")
   round(coef(summary(GM1)),2)
@@ -68,9 +75,6 @@ if(!file.exists("Models/GM1.Rda")){
   load("Models/GM1.Rda")
   round(coef(summary(GM1)),2)
 }
-
-
-
 
 
 
