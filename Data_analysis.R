@@ -2,7 +2,7 @@
 
 # Martin R. Vasilev & Tim Slattery, 2018 
 
-rm(list=ls)
+rm(list=ls())
 
 # load/ install packages:
 if('lme4' %in% rownames(installed.packages())==FALSE){
@@ -30,15 +30,24 @@ dat <- read.csv("data/OZdata.csv", na.strings = "na")
 
 get_num<- function(string){as.numeric(unlist(gsub("[^0-9]", "", unlist(string)), ""))}
 dat$subject<- get_num(dat$subject)
+dat$subject<- as.factor(dat$subject)
 
 dat$condition<- factor(dat$condition)
-levels(q$condition)<- c("Normal","Bold")
+levels(dat$condition)<- c("Normal","Bold")
 dat$item <- factor(dat$item)
-dat$FixType <- factor(dat$FixType)
-levels(dat$FixType) <- c("Standard","Line final","Accurate-sweep","Undersweep")
+
+dat$FixType<- factor(dat$FixType, levels = c("intra-line", "line-final", "undersweep", "accurate-sweep"))
+contrasts(dat$FixType)
+
+
+# TEMPORARY!!!
+dat<- subset(dat, FixType != "oops")
+table(dat$FixType)
+#dat$FixType <- factor(dat$FixType)
+#levels(dat$FixType) <- c("Standard","Line final","Accurate-sweep","Undersweep")
 
 # remove outliers:
-out<- which(dat$fixduration >= 1200)
+out<- which(dat$fixduration >= 1000)
 cat(paste(round((length(out)/nrow(dat))*100, 3)), "% of fixations removed as outliers")
 dat<- dat[-out, ]
 
@@ -77,12 +86,50 @@ if(!file.exists("Models/GM1.Rda")){
 }
 
 
+#### Fixation type:
+DesType<- melt(dat, id=c('subject', 'item', 'condition', 'FixType'), 
+            measure=c('fixduration') , na.rm=TRUE)
 
+mType<- cast(DesType, condition+FixType ~ variable
+          , function(x) c(M=signif(mean(x),3)
+                          , SD= sd(x) ))
+
+mType$fixduration_SD<- round(mType$fixduration_SD)
+
+
+
+# Fixation type x Text type model:
+(!file.exists("Models/LM1.Rda")){
+  LM1<- lmer(log(fixduration)~ condition * FixType + (condition|subject)+ (condition|item), data= dat)
+  save(LM1, file= "Models/LM1.Rda")
+  summary(LM1)
+}else{
+  load("Models/LM1.Rda")
+  summary(LM1)
+}
+round(coef(summary(LM1)),3)
 
 
 
 #####
 
+# Landing profile analysis:
+
+# remove the first line from each item: there is no return sweep there because participants start reading
+# with a gaze box as the start of the sentence (line 0 in the dataset).
+dat2<- subset(dat, line!=0)
+
+# Take only first fixation on each line:
+dat2<- subset(dat2, FixType== "undersweep" | FixType== "accurate-sweep")
+
+# Code landing position from the start of each line:
+dat2$lineStartLand<- dat2$currentX- dat2$StartLineX 
+
+
+# Model:
+contrasts(dat2$condition)
+
+LM2<- lmer(Rserror~ condition+ (1|subject)+ (1|item), data= dat2)
 
 
 
