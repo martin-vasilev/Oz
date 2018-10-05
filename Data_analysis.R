@@ -24,7 +24,6 @@ if('effects' %in% rownames(installed.packages())==FALSE){
   install.packages('effects'); library(effects)} else{ library(effects)}
 
 
-
 # Load and prepare data files:
 dat <- read.csv("data/OZdata.csv", na.strings = "na")
 
@@ -122,27 +121,46 @@ dat2<- subset(dat, line!=0)
 # Take only first fixation on each line:
 dat2<- subset(dat2, FixType== "undersweep" | FixType== "accurate-sweep")
 
+
 # Code landing position from the start of each line:
 dat2$lineStartLand<- dat2$currentX- dat2$StartLineX 
 
+# Return sweep saccade length:
+dat2$sacc_len<- abs(dat2$priorX - dat2$currentX)
+
+# center saccade length to improve model scaling:
+dat2$sacc_lenCntr<- scale(dat2$sacc_len)
 
 # Model:
 contrasts(dat2$condition)
+dat2$undersweep<- as.factor(dat2$undersweep)
+contrasts(dat2$undersweep)
 
-LM2<- lmer(Rserror~ condition+ (1|subject)+ (1|item), data= dat2)
+LM2<- lmer(lineStartLand~ condition*undersweep +sacc_len +sacc_len:condition+ (condition|subject)+ (condition|item), data= dat2)
+summary(LM2)
 
+plot(effect('condition', LM2), ylab= "Landing position (number of characters the from line start)",
+     main= "Effect of bolding on return sweep landing position")
 
-
-
-
-
-
-
-
-
-
+plot(effect('condition:undersweep', LM2), ylab= "Landing position (number of characters the from line start)",
+     main= "Effect of bolding on return sweep landing position")
 
 
+plot(effect('condition:sacc_len', LM2), ylab= "Landing position (number of characters the from line start)",
+     main= "Effect of bolding on return sweep landing position")
+
+
+
+LM3<- lmer(lineStartLand~ condition*sacc_len*undersweep+ (condition|subject)+ (condition|item), data= dat2)
+summary(LM3)
+
+
+LM3<- lmer(lineStartLand~ condition*Len1 + sacc_len+ (condition|subject)+ (condition|item), data= dat2)
+summary(LM3)
+
+
+GM2<- glmer(undersweep ~ condition + (condition|subject)+ (condition|item), family= binomial, data= dat2)
+summary(GM2)
 
 
 
