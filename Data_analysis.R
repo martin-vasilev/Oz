@@ -162,6 +162,22 @@ summary(LM3)
 GM2<- glmer(undersweep ~ condition + (condition|subject)+ (condition|item), family= binomial, data= dat2)
 summary(GM2)
 
+plot(effect('condition', GM2), main= "Effect of bolding on undersweep probability",
+     ylab= "Probability of undersweep")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 p2 <- qplot(fixduration, data = p, facets = FixType ~ ., linetype = condition, geom = "density", xlim = c(0,500)) + xlab("Fixation Duration")
