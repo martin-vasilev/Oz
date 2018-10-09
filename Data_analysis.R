@@ -36,7 +36,7 @@ levels(dat$condition)<- c("Normal","Bold")
 dat$item <- factor(dat$item)
 
 # remove outliers:
-out<- which(dat$fixduration >= 1000)
+out<- which(dat$fixduration >= 800)
 cat(paste(round((length(out)/nrow(dat))*100, 3)), "% of fixations removed as outliers")
 dat<- dat[-out, ]
 
@@ -122,8 +122,9 @@ mType$fixduration_SD<- round(mType$fixduration_SD)
 
 
 p <- ggplot(dat1, aes(x=condition, y=fixduration, fill= condition)) + 
-    geom_violin(weight= 2, alpha= 0.2) + geom_boxplot(width=0.25, outlier.color= "#777777")+ theme_bw(22) +
-    scale_fill_brewer(palette="Dark2")+ scale_color_brewer(palette="Dark2")+
+    geom_violin(weight= 2, alpha= 0.3) + geom_boxplot(width=0.25, outlier.color = "#4c5159", #outlier.color= "#777777", 
+            outlier.size= 1, outlier.shape=8)+ theme_bw(22) + 
+    scale_fill_brewer(palette="Accent")+ scale_color_brewer(palette="Accent")+
     theme(panel.grid.major = element_line(colour = "#E3E5E6", size=0.7), 
           axis.line = element_line(colour = "black", size=1),
           panel.border = element_rect(colour = "black", size=1, fill = NA),
@@ -133,7 +134,8 @@ p <- ggplot(dat1, aes(x=condition, y=fixduration, fill= condition)) +
           legend.key = element_rect(colour = "#000000", size=1),
           plot.title = element_text(size = 20))+
     xlab("Condition")+ ylab("Fixation duration") +ggtitle("Fixation type"); p
-ggsave(p, filename = "Plots/FixbyType.pdf", width = 16, height = 10)
+ggsave(p, filename = "Plots/FixbyType.pdf", width = 12, height = 7)
+ggsave(p, filename = "Plots/FixbyType.png", width = 12, height = 7, dpi= 300)
   
   
   
