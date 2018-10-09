@@ -2,7 +2,7 @@
 
 # Martin R. Vasilev & Tim Slattery, 2018 
 
-rm(list=ls)
+rm(list=ls())
 
 # load/ install packages:
 if('lme4' %in% rownames(installed.packages())==FALSE){
@@ -24,26 +24,36 @@ if('effects' %in% rownames(installed.packages())==FALSE){
   install.packages('effects'); library(effects)} else{ library(effects)}
 
 
-
 # Load and prepare data files:
 dat <- read.csv("data/OZdata.csv", na.strings = "na")
 
 get_num<- function(string){as.numeric(unlist(gsub("[^0-9]", "", unlist(string)), ""))}
 dat$subject<- get_num(dat$subject)
+dat$subject<- as.factor(dat$subject)
 
 dat$condition<- factor(dat$condition)
-levels(q$condition)<- c("Normal","Bold")
+levels(dat$condition)<- c("Normal","Bold")
 dat$item <- factor(dat$item)
-dat$FixType <- factor(dat$FixType)
-levels(dat$FixType) <- c("Standard","Line final","Accurate-sweep","Undersweep")
+
+dat$FixType<- factor(dat$FixType, levels = c("intra-line", "line-final", "undersweep", "accurate-sweep"))
+contrasts(dat$FixType)
+
+
+# TEMPORARY!!!
+dat<- subset(dat, FixType != "oops")
+table(dat$FixType)
+#dat$FixType <- factor(dat$FixType)
+#levels(dat$FixType) <- c("Standard","Line final","Accurate-sweep","Undersweep")
 
 # remove outliers:
-out<- which(dat$fixduration >= 1200)
+out<- which(dat$fixduration >= 1000)
 cat(paste(round((length(out)/nrow(dat))*100, 3)), "% of fixations removed as outliers")
 dat<- dat[-out, ]
 
 
 # Comprehension accuracy:
+
+# Note: questions 1-5 are from "Dorothy" and questions 6-10 are from "Tiktok".
 q <- read.csv("data/OZquest.csv", na.strings = "na")
 q$condition<- factor(q$condition)
 levels(q$condition)<- c("Normal","Bold")
@@ -58,9 +68,14 @@ DesQ<- melt(q, id=c('subject', 'item', 'condition'),
 mQ<- cast(DesQ, condition ~ variable
               , function(x) c(M=signif(mean(x),3)
                               , SD= sd(x) ))
+# subject average accuracy:
+mQ2<- cast(DesQ, subject ~ variable
+          , function(x) c(M=signif(mean(x),3)
+                          , SD= sd(x) ))
 
 # Accuracy model:
 if(!file.exists("Models/GM1.Rda")){
+  # model does not converge with a random slope for items.
   GM1<- glmer(accuracy ~ condition + (condition|subject)+ (1|item), family= binomial, data=q)
   save(GM1, file= "Models/GM1.Rda")
   round(coef(summary(GM1)),2)
@@ -70,15 +85,85 @@ if(!file.exists("Models/GM1.Rda")){
 }
 
 
+#### Fixation type:
+DesType<- melt(dat, id=c('subject', 'item', 'condition', 'FixType'), 
+            measure=c('fixduration') , na.rm=TRUE)
+
+mType<- cast(DesType, condition+FixType ~ variable
+          , function(x) c(M=signif(mean(x),3)
+                          , SD= sd(x) ))
+
+mType$fixduration_SD<- round(mType$fixduration_SD)
 
 
 
-
+# Fixation type x Text type model:
+(!file.exists("Models/LM1.Rda")){
+  LM1<- lmer(log(fixduration)~ condition * FixType + (condition|subject)+ (condition|item), data= dat)
+  save(LM1, file= "Models/LM1.Rda")
+  summary(LM1)
+}else{
+  load("Models/LM1.Rda")
+  summary(LM1)
+}
+round(coef(summary(LM1)),3)
 
 
 
 #####
 
+# Landing profile analysis:
+
+# remove the first line from each item: there is no return sweep there because participants start reading
+# with a gaze box as the start of the sentence (line 0 in the dataset).
+dat2<- subset(dat, line!=0)
+
+# Take only first fixation on each line:
+dat2<- subset(dat2, FixType== "undersweep" | FixType== "accurate-sweep")
+
+
+# Code landing position from the start of each line:
+dat2$lineStartLand<- dat2$currentX- dat2$StartLineX 
+
+# Return sweep saccade length:
+dat2$sacc_len<- abs(dat2$priorX - dat2$currentX)
+
+# center saccade length to improve model scaling:
+dat2$sacc_lenCntr<- scale(dat2$sacc_len)
+
+# Model:
+contrasts(dat2$condition)
+dat2$undersweep<- as.factor(dat2$undersweep)
+contrasts(dat2$undersweep)
+
+LM2<- lmer(lineStartLand~ condition*undersweep +sacc_len +sacc_len:condition+ (condition|subject)+ (condition|item), data= dat2)
+summary(LM2)
+
+plot(effect('condition', LM2), ylab= "Landing position (number of characters the from line start)",
+     main= "Effect of bolding on return sweep landing position")
+
+plot(effect('condition:undersweep', LM2), ylab= "Landing position (number of characters the from line start)",
+     main= "Effect of bolding on return sweep landing position")
+
+
+plot(effect('condition:sacc_len', LM2), ylab= "Landing position (number of characters the from line start)",
+     main= "Effect of bolding on return sweep landing position")
+
+
+
+LM3<- lmer(lineStartLand~ condition*sacc_len*undersweep+ (condition|subject)+ (condition|item), data= dat2)
+summary(LM3)
+
+
+LM3<- lmer(lineStartLand~ condition*Len1 + sacc_len+ (condition|subject)+ (condition|item), data= dat2)
+summary(LM3)
+
+
+GM2<- glmer(undersweep ~ condition + (condition|subject)+ (condition|item), family= binomial, data= dat2)
+summary(GM2)
+
+plot(effect('condition', GM2), main= "Effect of bolding on undersweep probability",
+     ylab= "Probability of undersweep")
 
 
 
