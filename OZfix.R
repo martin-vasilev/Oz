@@ -14,11 +14,10 @@ str(p)
 p$item <- factor(p$item)
 p$condition <- factor(p$condition)
 levels(p$condition) <- c("Normal","Bold")
-p$FixType <- factor(p$FixType)
-levels(p$FixType) <- c("Standard","Line final","Accurate-sweep","Undersweep")
 
 
-p2 <- qplot(fixduration, data = p, facets = FixType ~ ., linetype = condition, geom = "density", xlim = c(0,500)) + xlab("Fixation Duration")
+
+p2 <- qplot(fixduration, data = p, facets = FixType ~ ., geom = "density", xlim = c(0,500)) + xlab("Fixation Duration")
 p2
 ggsave(file = "Psycho17fixtype.pdf", dpi = 1200)
 
