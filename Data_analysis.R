@@ -35,20 +35,29 @@ dat$condition<- factor(dat$condition)
 levels(dat$condition)<- c("Normal","Bold")
 dat$item <- factor(dat$item)
 
-dat$FixType<- factor(dat$FixType, levels = c("intra-line", "line-final", "undersweep", "accurate-sweep"))
-contrasts(dat$FixType)
-
-
-# TEMPORARY!!!
-dat<- subset(dat, FixType != "oops")
-table(dat$FixType)
-#dat$FixType <- factor(dat$FixType)
-#levels(dat$FixType) <- c("Standard","Line final","Accurate-sweep","Undersweep")
-
 # remove outliers:
 out<- which(dat$fixduration >= 1000)
 cat(paste(round((length(out)/nrow(dat))*100, 3)), "% of fixations removed as outliers")
 dat<- dat[-out, ]
+
+
+# subset data for fixation type analysis:
+
+# Note: In this experiment, there were some lines that are very short (i.e, even containing a single short word).
+# This is a natural consequence of this type of text that was used in the study. As a result of this, there are 
+# cases where such lines were fixated only once. Because in such case the fixation is both an accurate sweep and 
+# a line-final fixation, we exclude them from this particular analysis. Such fixations accounted for 0.22% of all
+# fixations.
+table(dat$FixType)
+
+dat1<- subset(dat, FixType!= "both")
+dat1$FixType<- droplevels(dat1$FixType)
+table(dat1$FixType) # good
+
+# change contrast coding so that intra-line (i.e., typical fixation) is the baseline:
+contrasts(dat1$FixType)
+dat1$FixType<- factor(dat1$FixType, levels = c("intra-line", "line-final", "accurate-sweep", "under-sweep"))
+contrasts(dat1$FixType)
 
 
 # Comprehension accuracy:
@@ -86,7 +95,7 @@ if(!file.exists("Models/GM1.Rda")){
 
 
 #### Fixation type:
-DesType<- melt(dat, id=c('subject', 'item', 'condition', 'FixType'), 
+DesType<- melt(dat1, id=c('subject', 'item', 'condition', 'FixType'), 
             measure=c('fixduration') , na.rm=TRUE)
 
 mType<- cast(DesType, condition+FixType ~ variable
@@ -95,11 +104,45 @@ mType<- cast(DesType, condition+FixType ~ variable
 
 mType$fixduration_SD<- round(mType$fixduration_SD)
 
+# Plot:
+# Dplot<- ggplot(dat1, aes(x= fixduration, group= condition, linetype= condition, color= condition,
+#                          size= condition)) + xlim(0, 600)+
+#               theme_bw(24)+ geom_density(size=1.3) + scale_color_manual(values=c("#E69F00", "#56B4E9"))+
+#               theme(legend.position="bottom")+ facet_grid(rows = vars(FixType))+ 
+#               theme(strip.text.x = element_text(size = 22, face="bold",family="serif"),
+#               strip.background = element_rect(fill="#F5F7F7", colour="black", size=1.5),
+#               legend.key = element_rect(colour = "#000000", size=1))+
+#               xlab("Fixation duration")+ ylab("Probability density")
+# Dplot
+# 
+# ggsave(Dplot, filename = "Plots/FixbyType.pdf", width = 10, height = 10)
+# #+
+#   geom_vline(data=mu, aes(xintercept=grp.mean, color=sex),
+#              linetype="dashed")
 
 
+p <- ggplot(dat1, aes(x=condition, y=fixduration, fill= condition)) + 
+    geom_violin(weight= 2, alpha= 0.2) + geom_boxplot(width=0.25, outlier.color= "#777777")+ theme_bw(22) +
+    scale_fill_brewer(palette="Dark2")+ scale_color_brewer(palette="Dark2")+
+    theme(panel.grid.major = element_line(colour = "#E3E5E6", size=0.7), 
+          axis.line = element_line(colour = "black", size=1),
+          panel.border = element_rect(colour = "black", size=1, fill = NA),
+          legend.position="none", plot.title = element_text(hjust = 0.5))+facet_grid(.~ FixType) + 
+    theme(strip.text.x = element_text(size = 20,  face="bold",family="serif"),
+          strip.background = element_rect(fill="#F5F7F7", colour="black", size=1.5),
+          legend.key = element_rect(colour = "#000000", size=1),
+          plot.title = element_text(size = 20))+
+    xlab("Condition")+ ylab("Fixation duration") +ggtitle("Fixation type"); p
+ggsave(p, filename = "Plots/FixbyType.pdf", width = 16, height = 10)
+  
+  
+  
+
+contrasts(dat1$condition)
+contrasts(dat1$FixType)
 # Fixation type x Text type model:
-(!file.exists("Models/LM1.Rda")){
-  LM1<- lmer(log(fixduration)~ condition * FixType + (condition|subject)+ (condition|item), data= dat)
+if(!file.exists("Models/LM1.Rda")){
+  LM1<- lmer(log(fixduration)~ condition * FixType + (condition|subject)+ (condition|item), data= dat1)
   save(LM1, file= "Models/LM1.Rda")
   summary(LM1)
 }else{
@@ -119,7 +162,7 @@ round(coef(summary(LM1)),3)
 dat2<- subset(dat, line!=0)
 
 # Take only first fixation on each line:
-dat2<- subset(dat2, FixType== "undersweep" | FixType== "accurate-sweep")
+dat2<- subset(dat2, FixType== "under-sweep" | FixType== "accurate-sweep")
 
 
 # Code landing position from the start of each line:
@@ -129,14 +172,23 @@ dat2$lineStartLand<- dat2$currentX- dat2$StartLineX
 dat2$sacc_len<- abs(dat2$priorX - dat2$currentX)
 
 # center saccade length to improve model scaling:
-dat2$sacc_lenCntr<- scale(dat2$sacc_len)
+dat2$sacc_lenC<- scale(dat2$sacc_len)
 
-# Model:
+
+# scale word length:
+dat2$Len1C<- scale(dat2$Len1)
+dat2$Len2C<- scale(dat2$Len2)
+
+
+# Model: new line landing position
 contrasts(dat2$condition)
 dat2$undersweep<- as.factor(dat2$undersweep)
 contrasts(dat2$undersweep)
 
-LM2<- lmer(lineStartLand~ condition*undersweep +sacc_len +sacc_len:condition+ (condition|subject)+ (condition|item), data= dat2)
+
+LM2<- lmer(lineStartLand~ condition*sacc_lenC+ (condition|subject)+ (condition|item),
+           data= dat2)
+
 summary(LM2)
 
 plot(effect('condition', LM2), ylab= "Landing position (number of characters the from line start)",
@@ -146,26 +198,36 @@ plot(effect('condition:undersweep', LM2), ylab= "Landing position (number of cha
      main= "Effect of bolding on return sweep landing position")
 
 
-plot(effect('condition:sacc_len', LM2), ylab= "Landing position (number of characters the from line start)",
-     main= "Effect of bolding on return sweep landing position")
+plot(effect('condition:sacc_lenCntr', LM2), ylab= "Landing position (number of characters the from line start)",
+     main= "Effect of bolding on return sweep landing position", xlab= "Returns sweep saccade length (centred at 0)")
 
 
 
-LM3<- lmer(lineStartLand~ condition*sacc_len*undersweep+ (condition|subject)+ (condition|item), data= dat2)
-summary(LM3)
+# LM3<- lmer(Rserror~ condition*sacc_lenCntr*undersweep+ (condition|subject)+ (condition|item), data= dat2)
+# summary(LM3)
+# 
+# 
+# LM3<- lmer(lineStartLand~ Len1C*Len2C*condition+ (condition|subject)+ (condition|item), data= dat2)
+# summary(LM3)
 
 
-LM3<- lmer(lineStartLand~ condition*Len1 + sacc_len+ (condition|subject)+ (condition|item), data= dat2)
-summary(LM3)
+###### Return sweep probability: 
 
+if(!file.exists("Models/GM2.Rda")){
+  GM2<- glmer(undersweep ~ condition * sacc_lenC + (condition|subject)+ (1|item),
+              family= binomial, data= dat2)
+  save(GM2, file= "Models/GM2.Rda")
+}else{
+  load("Models/GM2.Rda")
+}
 
-GM2<- glmer(undersweep ~ condition + (condition|subject)+ (condition|item), family= binomial, data= dat2)
 summary(GM2)
 
 plot(effect('condition', GM2), main= "Effect of bolding on undersweep probability",
      ylab= "Probability of undersweep")
 
-
+plot(effect('condition:sacc_lenCntr', GM2), main= "Effect of bolding on undersweep probability",
+     ylab= "Probability of undersweep")
 
 
 
