@@ -26,6 +26,8 @@ if('effects' %in% rownames(installed.packages())==FALSE){
 
 # Load and prepare data files:
 dat <- read.csv("data/OZdata.csv", na.strings = "na")
+#dat <- read.csv("OZ32fixdist.csv", na.strings = "na")
+
 
 get_num<- function(string){as.numeric(unlist(gsub("[^0-9]", "", unlist(string)), ""))}
 dat$subject<- get_num(dat$subject)
@@ -122,10 +124,11 @@ mType$fixduration_SD<- round(mType$fixduration_SD)
 
 
 p <- ggplot(dat1, aes(x=condition, y=fixduration, fill= condition)) + 
-    geom_violin(weight= 2, alpha= 0.3) + geom_boxplot(width=0.25, outlier.color = "#4c5159", #outlier.color= "#777777", 
-            outlier.size= 1, outlier.shape=8)+ theme_bw(22) + 
+    geom_boxplot(width=0.25, outlier.color = "#4c5159", #outlier.color= "#777777", 
+            outlier.size= 1, outlier.shape=8, coef= 4)+
+  geom_violin(weight= 2, alpha= 0.3, scale= "count") + theme_bw(22) + 
     scale_fill_brewer(palette="Accent")+ scale_color_brewer(palette="Accent")+
-    theme(panel.grid.major = element_line(colour = "#E3E5E6", size=0.7), 
+    theme(panel.grid = element_line(colour = "#ededed", size=0.5), 
           axis.line = element_line(colour = "black", size=1),
           panel.border = element_rect(colour = "black", size=1, fill = NA),
           legend.position="none", plot.title = element_text(hjust = 0.5))+facet_grid(.~ FixType) + 
@@ -133,6 +136,8 @@ p <- ggplot(dat1, aes(x=condition, y=fixduration, fill= condition)) +
           strip.background = element_rect(fill="#F5F7F7", colour="black", size=1.5),
           legend.key = element_rect(colour = "#000000", size=1),
           plot.title = element_text(size = 20))+
+  scale_y_continuous(breaks = c(100, 200, 300, 400, 500, 600, 700, 800))+
+  stat_summary(fun.y=mean, geom="point", shape=16, color= "darkred", size=2)+
     xlab("Condition")+ ylab("Fixation duration") +ggtitle("Fixation type"); p
 ggsave(p, filename = "Plots/FixbyType.pdf", width = 12, height = 7)
 ggsave(p, filename = "Plots/FixbyType.png", width = 12, height = 7, dpi= 300)
@@ -164,8 +169,22 @@ round(coef(summary(LM1)),3)
 dat2<- subset(dat, line!=0)
 
 # Take only first fixation on each line:
-dat2<- subset(dat2, FixType== "under-sweep" | FixType== "accurate-sweep")
+dat2<- subset(dat2, FixType== "under-sweep" | FixType== "accurate-sweep" | FixType== "both")
+dat2$FixType<- droplevels(dat2$FixType)
+dat2$FixType<- as.character(dat2$FixType)
+table(dat2$FixType)
 
+# recode single fixations on a line occuring on short lines (see above)
+# these are considered accurate sweeps since readers did not make any more fixations on the line
+# and have presumably processed its contents
+for(i in 1:nrow(dat2)){
+  if(dat2$FixType[i]== "both"){
+    dat2$FixType[i]= "accurate-sweep"
+    dat2$undersweep[i]=1
+  }
+}
+
+table(dat2$FixType)
 
 # Code landing position from the start of each line:
 dat2$lineStartLand<- dat2$currentX- dat2$StartLineX 
@@ -188,7 +207,7 @@ dat2$undersweep<- as.factor(dat2$undersweep)
 contrasts(dat2$undersweep)
 
 
-LM2<- lmer(lineStartLand~ condition*sacc_lenC+ (condition|subject)+ (condition|item),
+LM2<- lmer(lineStartLand~ condition*sacc_lenC*undersweep+ (condition|subject)+ (condition|item),
            data= dat2)
 
 summary(LM2)
@@ -205,12 +224,9 @@ plot(effect('condition:sacc_lenCntr', LM2), ylab= "Landing position (number of c
 
 
 
-# LM3<- lmer(Rserror~ condition*sacc_lenCntr*undersweep+ (condition|subject)+ (condition|item), data= dat2)
-# summary(LM3)
-# 
-# 
-# LM3<- lmer(lineStartLand~ Len1C*Len2C*condition+ (condition|subject)+ (condition|item), data= dat2)
-# summary(LM3)
+LM3<- lmer(lineStartLand~ condition*sacc_lenC+ Len1C+ Len1C:condition+ (condition|subject)+ (condition|item),
+           data= dat2)
+summary(LM3)
 
 
 ###### Return sweep probability: 
@@ -228,14 +244,23 @@ summary(GM2)
 plot(effect('condition', GM2), main= "Effect of bolding on undersweep probability",
      ylab= "Probability of undersweep")
 
-plot(effect('condition:sacc_lenCntr', GM2), main= "Effect of bolding on undersweep probability",
+plot(effect('condition:sacc_lenC', GM2), main= "Effect of bolding on undersweep probability",
      ylab= "Probability of undersweep")
 
 
 
+FitGM<- subset(dat2, !is.na(sacc_len))
+FitGM$GM2<- fitted(GM2)
 
 
+DesGM<- melt(FitGM, id=c('subject', 'item', 'condition', 'FixType'), 
+               measure=c('GM2') , na.rm=TRUE)
 
+mGM<- cast(DesGM, condition ~ variable
+             , function(x) c(M=signif(mean(x),3)
+                             , SD= sd(x) ))
+
+mType$fixduration_SD<- round(mType$fixduration_SD)
 
 
 
