@@ -189,11 +189,16 @@ contrasts(dat2$condition)
 dat2$undersweep<- as.factor(dat2$undersweep)
 contrasts(dat2$undersweep)
 
-
-LM2<- lmer(lineStartLand~ condition*sacc_lenC*Len1C+ (condition|subject)+ (condition|item),
-           data= dat2)
+if(!file.exists("Models/LM2.Rda")){
+  LM2<- lmer(lineStartLand~ condition*sacc_lenC*Len1C*Len2C+ (condition|subject)+ (condition|item),
+             data= dat2)
+  save(LM2, file= "Models/LM2.Rda")
+}else{
+  load("Models/LM2.Rda")
+}
 
 summary(LM2)
+round(coef(summary(LM2)),3)
 
 plot(effect('condition', LM2), ylab= "Landing position (number of characters the from line start)",
      main= "Effect of bolding on return sweep landing position")
@@ -207,9 +212,9 @@ plot(effect('condition:sacc_lenCntr', LM2), ylab= "Landing position (number of c
 
 
 
-LM3<- lmer(lineStartLand~ condition*sacc_lenC+ Len1C+ Len1C:condition+ (condition|subject)+ (condition|item),
-           data= dat2)
-summary(LM3)
+# LM3<- lmer(lineStartLand~ condition*sacc_lenC+ Len1C+ Len1C:condition+ (condition|subject)+ (condition|item),
+#            data= dat2)
+# summary(LM3)
 
 
 ###### Return sweep probability: 
