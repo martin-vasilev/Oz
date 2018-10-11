@@ -107,22 +107,6 @@ mType<- cast(DesType, condition+FixType ~ variable
 mType$fixduration_SD<- round(mType$fixduration_SD)
 
 # Plot:
-# Dplot<- ggplot(dat1, aes(x= fixduration, group= condition, linetype= condition, color= condition,
-#                          size= condition)) + xlim(0, 600)+
-#               theme_bw(24)+ geom_density(size=1.3) + scale_color_manual(values=c("#E69F00", "#56B4E9"))+
-#               theme(legend.position="bottom")+ facet_grid(rows = vars(FixType))+ 
-#               theme(strip.text.x = element_text(size = 22, face="bold",family="serif"),
-#               strip.background = element_rect(fill="#F5F7F7", colour="black", size=1.5),
-#               legend.key = element_rect(colour = "#000000", size=1))+
-#               xlab("Fixation duration")+ ylab("Probability density")
-# Dplot
-# 
-# ggsave(Dplot, filename = "Plots/FixbyType.pdf", width = 10, height = 10)
-# #+
-#   geom_vline(data=mu, aes(xintercept=grp.mean, color=sex),
-#              linetype="dashed")
-
-
 p <- ggplot(dat1, aes(x=condition, y=fixduration, fill= condition)) + 
     geom_boxplot(width=0.25, outlier.color = "#4c5159", #outlier.color= "#777777", 
             outlier.size= 1, outlier.shape=8, coef= 4)+
@@ -142,9 +126,8 @@ p <- ggplot(dat1, aes(x=condition, y=fixduration, fill= condition)) +
 ggsave(p, filename = "Plots/FixbyType.pdf", width = 12, height = 7)
 ggsave(p, filename = "Plots/FixbyType.png", width = 12, height = 7, dpi= 300)
   
-  
-  
 
+# Model:
 contrasts(dat1$condition)
 contrasts(dat1$FixType)
 # Fixation type x Text type model:
@@ -207,7 +190,7 @@ dat2$undersweep<- as.factor(dat2$undersweep)
 contrasts(dat2$undersweep)
 
 
-LM2<- lmer(lineStartLand~ condition*sacc_lenC*undersweep+ (condition|subject)+ (condition|item),
+LM2<- lmer(lineStartLand~ condition*sacc_lenC*Len1C+ (condition|subject)+ (condition|item),
            data= dat2)
 
 summary(LM2)
@@ -232,7 +215,7 @@ summary(LM3)
 ###### Return sweep probability: 
 
 if(!file.exists("Models/GM2.Rda")){
-  GM2<- glmer(undersweep ~ condition * sacc_lenC + (condition|subject)+ (1|item),
+  GM2<- glmer(undersweep ~ condition * sacc_lenC  + (condition||subject)+ (condition||item),
               family= binomial, data= dat2)
   save(GM2, file= "Models/GM2.Rda")
 }else{
@@ -240,6 +223,7 @@ if(!file.exists("Models/GM2.Rda")){
 }
 
 summary(GM2)
+round(coef(summary(GM2)),3)
 
 plot(effect('condition', GM2), main= "Effect of bolding on undersweep probability",
      ylab= "Probability of undersweep")
@@ -252,17 +236,31 @@ plot(effect('condition:sacc_lenC', GM2), main= "Effect of bolding on undersweep 
 FitGM<- subset(dat2, !is.na(sacc_len))
 FitGM$GM2<- fitted(GM2)
 
-
+a<- effect('condition', GM2)
 DesGM<- melt(FitGM, id=c('subject', 'item', 'condition', 'FixType'), 
                measure=c('GM2') , na.rm=TRUE)
 
-mGM<- cast(DesGM, condition ~ variable
+mGM<- cast(DesGM, condition+subject ~ variable
              , function(x) c(M=signif(mean(x),3)
                              , SD= sd(x) ))
 
-mType$fixduration_SD<- round(mType$fixduration_SD)
 
+df<- data.frame(condition= c("Normal", "Bold"), mean= c(0.6305651, 0.5694246), lower= c(0.5496077, 0.4919586),
+                upper= c(0.7047869, 0.6436351))
+df$condition<- factor(df$condition, levels= c("Normal", "Bold"))
+mGM<- as.data.frame(mGM)
+mGM$SE<- (mGM$GM2_SD/sqrt(35))*1.96 # 35 items per sub
+mGM$upper<- mGM$GM2_M- mGM$SE
+mGM$lower<- mGM$GM2_M- mGM$SE
+mGM$SE<- NULL; mGM$GM2_SD<- NULL
+colnames(mGM)<- c("condition", "subject", "mean", "upper", "lower")
 
+GMplot<- ggplot(df, aes(x= condition, y= mean, group=1, ymax = upper, ymin= lower)) +
+         scale_fill_brewer(palette="Dark2")+ scale_colour_brewer(palette="Dark2")+
+         geom_line(size=1.2, color= "darkred")+ theme_classic(22)+ xlab("Condition")+ ylab("p(Return sweep)")+ 
+         geom_ribbon(alpha=0.10, colour=NA, fill= "darkred")+ theme(legend.position = "none")
+GMplot<- GMplot + geom_jitter(data= mGM, aes(color= condition, shape= condition), size=3, width = 0.2)+
+         scale_x_discrete(expand = c(0.1,0.1)); GMplot
 
 
 
