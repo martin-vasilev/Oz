@@ -197,15 +197,20 @@ if(!file.exists("Models/LM2.Rda")){
   load("Models/LM2.Rda")
 }
 
+# launch site instead of sacc_len
+# subtract priorX - line start (next line)
+
 summary(LM2)
 round(coef(summary(LM2)),3)
 
 plot(effect('condition', LM2), ylab= "Landing position (number of characters the from line start)",
      main= "Effect of bolding on return sweep landing position")
 
-plot(effect('condition:undersweep', LM2), ylab= "Landing position (number of characters the from line start)",
-     main= "Effect of bolding on return sweep landing position")
 
+plot(effect('sacc_lenC', LM2))
+plot(effect('sacc_lenC:Len2C', LM2))
+
+plot(effect('sacc_lenC:Len1C', LM2))
 
 plot(effect('condition:sacc_lenCntr', LM2), ylab= "Landing position (number of characters the from line start)",
      main= "Effect of bolding on return sweep landing position", xlab= "Returns sweep saccade length (centred at 0)")
@@ -227,14 +232,154 @@ if(!file.exists("Models/GM2.Rda")){
   load("Models/GM2.Rda")
 }
 
+GM2<- glmer(undersweep ~ condition *scale(lineStartLand)  + (1|subject)+ (1|item),
+            family= binomial, data= dat2)
+# Landing position+ launch site
+
 summary(GM2)
 round(coef(summary(GM2)),3)
+
+plot(effect('sacc_lenC', GM2))
 
 plot(effect('condition', GM2), main= "Effect of bolding on undersweep probability",
      ylab= "Probability of undersweep")
 
 plot(effect('condition:sacc_lenC', GM2), main= "Effect of bolding on undersweep probability",
      ylab= "Probability of undersweep")
+
+
+
+
+### Word-level analysis (on first word on the line):
+
+library(readr)
+FD <- read_csv("data/OZword_data.csv")
+
+get_num<- function(string){as.numeric(unlist(gsub("[^0-9]", "", unlist(string)), ""))}
+FD$subject<- get_num(FD$subject)
+#FD$subject<- as.factor(FD$subject)
+
+#FD$condition<- factor(FD$condition)
+#levels(FD$condition)<- c("Normal","Bold")
+#FD$item <- factor(FD$item)
+
+# Take only the first word on a line:
+FD<- subset(FD, wordnum==2) # num 1 is empty space before line
+
+
+# get file names:
+d<- list.files("Experiment/DorothyText")
+n<- get_num(d)
+d<- d[order(n, d)]
+d<- paste("Experiment/DorothyText/",d, sep= '')
+
+t<- list.files("Experiment/TikTokText")
+n<- get_num(t)
+t<- t[order(n, t)]
+t<- paste("Experiment/TikTokText/",t, sep= '')
+
+files<- c(d, t)
+
+item<- NULL
+line<- NULL
+word<- NULL
+curr_item= NULL
+
+for(i in 1:length(files)){ # for each text page..
+  text<- readLines(files[i])
+  
+  for(j in 1:length(text)){ # for each line in text
+    string<- unlist(strsplit(text[j], " "))
+    word_string<- gsub("#", "", string[1])
+    
+    curr_item<- get_num(files[i])
+    line<- c(line, j)
+    word<- c(word, word_string)
+    item<- c(item, curr_item)
+  }
+  
+}
+
+wb<- data.frame(item, line, word)
+wb$word<- as.character(wb$word)
+wb$length<- nchar(wb$word)
+wb$word_clean<- wb$word
+wb$item[161:nrow(wb)]<-wb$item[161:nrow(wb)] +25
+#wb$word_clean<- tolower(wb$word_clean)
+
+# remove quotation marks, etc.:
+for(i in 1:nrow(wb)){
+  if(substr(wb$word_clean[i], 1, 1)== "'"){
+    wb$word_clean[i]<- substr(wb$word_clean[i], 2, nchar(wb$word_clean[i]))
+  }
+  
+  if(is.element(substr(wb$word_clean[i], nchar(wb$word_clean[i]), nchar(wb$word_clean[i])), c("'", ",", ".", "!", ";", ":"))){
+    wb$word_clean[i]<- substr(wb$word_clean[i], 1, nchar(wb$word_clean[i])-1)
+  }
+  if(is.element(substr(wb$word_clean[i], nchar(wb$word_clean[i]), nchar(wb$word_clean[i])), c(",", ".", "!"))){
+    wb$word_clean[i]<- substr(wb$word_clean[i], 1, nchar(wb$word_clean[i])-1)
+  }
+  
+  if(!is.element(wb$word_clean[i], c("I", "I'm"))){
+    wb$word_clean[i]<- tolower(wb$word_clean[i])
+  }
+}
+
+
+## find lexical frequencies
+library(readr)
+lex <- read_table2("data/SUBTLEX-UK.txt")
+wb$Zipf<- NA
+wb$freq<-NA
+for(i in 1:nrow(wb)){
+  a<- which(lex$Spelling== wb$word_clean[i])
+  if(length(a)>0){
+    wb$Zipf[i]<- lex$`LogFreq(Zipf)`[a]
+    wb$freq[i]<- lex$FreqCount[a]
+  }
+}
+ 
+
+sprintf("%f percent of words are not entries in the database", 100*(length(which(is.na(wb$Zipf)))/ nrow(wb)))
+
+FD$freq<- NA
+FD$Zipf<- NA
+FD$word_clean<- NA
+for(i in 1:nrow(FD)){
+  a<- which(wb$item== FD$item[i] & wb$line== (FD$line[i]+1))
+  
+  if(length(a)>0){
+    FD$freq[i]<- wb$freq[a]
+    FD$Zipf[i]<- wb$Zipf[a]
+    FD$word_clean[i]<- wb$word_clean[a]
+  }
+}
+
+# use AltGaze in MV_wordlist
+# Total
+
+# word frequency x bolding
+
+# separate model;
+# launch site: predicted by condition
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+######################################################################################################################
+
 
 
 
@@ -270,7 +415,7 @@ GMplot<- GMplot + geom_jitter(data= mGM, aes(color= condition, shape= condition)
 
 
 
-
+######################################################################################################################
 
 p2 <- qplot(fixduration, data = p, facets = FixType ~ ., linetype = condition, geom = "density", xlim = c(0,500)) + xlab("Fixation Duration")
 p2
