@@ -183,6 +183,23 @@ dat2$sacc_lenC<- scale(dat2$sacc_len)
 dat2$Len1C<- scale(dat2$Len1)
 dat2$Len2C<- scale(dat2$Len2)
 
+# Launch Site:
+# here, we need to substract the empty region before the start of a line to get the launch site
+# from the beginning of the text margin:
+dat2$launch<- abs(dat2$priorX- dat2$StartLineX)
+
+
+# Model: return sweep launch site as a function of experimental condition:
+
+if(!file.exists("Models/LM2.Rda")){
+  LSM<- lmer(launch~ condition+ (condition|subject)+ (condition|item), REML= T,
+             data= dat2)
+  save(LSM, file= "Models/LM2.Rda")
+}else{
+  load("Models/LM2.Rda")
+}
+summary(LSM)
+
 
 # Model: new line landing position
 contrasts(dat2$condition)
@@ -390,10 +407,6 @@ summary(WM2)
 round(coef(summary(WM2)),3)
 write.csv(round(coef(summary(WM2)),3), "Models/WM2.csv")
       
-# use AltGaze in MV_wordlist
-# Total
-
-# word frequency x bolding
 
 # separate model;
 # launch site: predicted by condition
