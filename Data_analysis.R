@@ -257,11 +257,6 @@ FD <- read_csv("data/OZword_data.csv")
 
 get_num<- function(string){as.numeric(unlist(gsub("[^0-9]", "", unlist(string)), ""))}
 FD$subject<- get_num(FD$subject)
-#FD$subject<- as.factor(FD$subject)
-
-#FD$condition<- factor(FD$condition)
-#levels(FD$condition)<- c("Normal","Bold")
-#FD$item <- factor(FD$item)
 
 # Take only the first word on a line:
 FD<- subset(FD, wordnum==2) # num 1 is empty space before line
@@ -355,6 +350,43 @@ for(i in 1:nrow(FD)){
   }
 }
 
+FD$subject<- as.factor(FD$subject)
+
+FD$condition<- factor(FD$condition)
+levels(FD$condition)<- c("Normal","Bold")
+FD$item <- factor(FD$item)
+
+contrasts(FD$condition)
+
+FD$word_len<- nchar(FD$word_clean)
+FD$AltGaze<- as.numeric(FD$AltGaze)
+FD$logFreq<- log(FD$freq)
+FD$word_lenC<- scale(FD$word_len)
+FD$TotalTime<- as.numeric(FD$TotalTime)
+
+# Model:
+library(lme4)
+
+if(!file.exists("Models/WM1.Rda")){
+  WM1<- lmer(log(AltGaze)~ condition*logFreq*word_lenC + (condition|subject)+ (condition|item),
+             REML=T, data= FD)
+  save(WM1, file= "Models/WM1.Rda")
+}else{
+  load("Models/WM1.Rda")
+}
+summary(WM1)
+round(coef(summary(WM1)),3)
+
+if(!file.exists("Models/WM2.Rda")){
+  WM2<- lmer(log(TotalTime)~ condition*logFreq*word_lenC + (condition|subject)+ (condition|item),
+             REML=T, data= FD)
+  save(WM2, file= "Models/WM2.Rda")
+}else{
+  load("Models/WM2.Rda")
+}
+
+summary(WM2)
+      
 # use AltGaze in MV_wordlist
 # Total
 
