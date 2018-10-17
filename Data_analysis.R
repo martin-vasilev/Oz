@@ -376,6 +376,7 @@ if(!file.exists("Models/WM1.Rda")){
 }
 summary(WM1)
 round(coef(summary(WM1)),3)
+write.csv(round(coef(summary(WM1)),3), "Models/WM1.csv")
 
 if(!file.exists("Models/WM2.Rda")){
   WM2<- lmer(log(TotalTime)~ condition*logFreq*word_lenC + (condition|subject)+ (condition|item),
@@ -386,6 +387,8 @@ if(!file.exists("Models/WM2.Rda")){
 }
 
 summary(WM2)
+round(coef(summary(WM2)),3)
+write.csv(round(coef(summary(WM2)),3), "Models/WM2.csv")
       
 # use AltGaze in MV_wordlist
 # Total

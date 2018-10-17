@@ -1,0 +1,9 @@
+"","Estimate","Std. Error","t value"
+"(Intercept)",5.839,0.05,117.555
+"conditionBold",-0.012,0.058,-0.214
+"logFreq",-0.029,0.004,-8.101
+"word_lenC",0.1,0.029,3.491
+"conditionBold:logFreq",0.001,0.005,0.197
+"conditionBold:word_lenC",0.053,0.04,1.328
+"logFreq:word_lenC",-0.005,0.003,-1.805
+"conditionBold:logFreq:word_lenC",-0.004,0.004,-0.911
