@@ -1,0 +1,17 @@
+"","Estimate","Std. Error","t value"
+"(Intercept)",7.195,0.41,17.529
+"conditionBold",-0.55,0.137,-4.022
+"sacc_lenC",-0.368,0.061,-6.023
+"Len1C",0.004,0.06,0.07
+"Len2C",0.064,0.061,1.049
+"conditionBold:sacc_lenC",0.09,0.084,1.07
+"conditionBold:Len1C",0.064,0.083,0.774
+"sacc_lenC:Len1C",-0.012,0.069,-0.169
+"conditionBold:Len2C",-0.081,0.084,-0.971
+"sacc_lenC:Len2C",0.098,0.06,1.638
+"Len1C:Len2C",-0.054,0.068,-0.804
+"conditionBold:sacc_lenC:Len1C",-0.041,0.096,-0.426
+"conditionBold:sacc_lenC:Len2C",0.095,0.085,1.109
+"conditionBold:Len1C:Len2C",0.026,0.095,0.279
+"sacc_lenC:Len1C:Len2C",0.284,0.074,3.822
+"conditionBold:sacc_lenC:Len1C:Len2C",-0.122,0.107,-1.138

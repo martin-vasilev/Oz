@@ -187,6 +187,7 @@ dat2$Len2C<- scale(dat2$Len2)
 # here, we need to substract the empty region before the start of a line to get the launch site
 # from the beginning of the text margin:
 dat2$launch<- abs(dat2$priorX- dat2$StartLineX)
+dat2$launchC<- scale(dat2$launch)
 
 
 # Model: return sweep launch site as a function of experimental condition:
@@ -207,7 +208,7 @@ dat2$undersweep<- as.factor(dat2$undersweep)
 contrasts(dat2$undersweep)
 
 if(!file.exists("Models/LM2.Rda")){
-  LM2<- lmer(lineStartLand~ condition*sacc_lenC*Len1C*Len2C+ (condition|subject)+ (condition|item),
+  LM2<- lmer(lineStartLand~ condition*launchC*Len1C*Len2C+ (condition|subject)+ (condition|item),
              data= dat2)
   save(LM2, file= "Models/LM2.Rda")
 }else{
@@ -220,24 +221,83 @@ if(!file.exists("Models/LM2.Rda")){
 summary(LM2)
 round(coef(summary(LM2)),3)
 
+write.csv(round(coef(summary(LM2)),3), "Models/LM2.csv")
+
+
 plot(effect('condition', LM2), ylab= "Landing position (number of characters the from line start)",
      main= "Effect of bolding on return sweep landing position")
 
+plot(effect('launchC', LM2))
+plot(effect('launchC:Len1C', LM2))
 
-plot(effect('sacc_lenC', LM2))
-plot(effect('sacc_lenC:Len2C', LM2))
+Int<- effect('launchC:Len1C', LM2)
+Int<- as.data.frame(Int)
 
-plot(effect('sacc_lenC:Len1C', LM2))
+QWL<- c(-1.8330659, -0.9770474, -0.1210288,  0.7349897,  3.7310546)
+WL<- c(2, 4, 6, 8, 15)
 
-plot(effect('condition:sacc_lenCntr', LM2), ylab= "Landing position (number of characters the from line start)",
-     main= "Effect of bolding on return sweep landing position", xlab= "Returns sweep saccade length (centred at 0)")
+Int$WL<- 0
+Int$WL[1:5]<- WL[1]
+Int$WL[6:10]<- WL[2]
+Int$WL[11:15]<- WL[3]
+Int$WL[16:20]<- WL[4]
+Int$WL[21:25]<- WL[5]
+
+LP<- c(0, 19, 39, 58, 77)
+Int$LP<- rep(LP,5)
+
+# scatter3D(Int$launchC, Int$fit, Int$WL, pch = 18, cex = 2, 
+#           theta = 20, phi = 20, ticktype = "detailed",
+#           xlab = "Launch", ylab = "Land. pos", zlab = "word length")#,  
+#           # surf = list(x = x.pred, y = y.pred, z = z.pred,  
+#           #             facets = NA, fit = fitpoints), main = "mtcars")
+# CI= list(Int$upper, Int$lower)
+lines2D(Int$LP, Int$fit, colvar = Int$WL, pch = 16,  bty ="n", cex = 1.5, lwd=2.5,
+          type ="b", ylab= "Landing position (from start of new line)",
+          xlab= "Launch position", clab = c("Word 1", "length"))
 
 
+W1<- subset(Int, WL== 2)
+W2<- subset(Int, WL== 4)
+W3<- subset(Int, WL== 6)
+W4<- subset(Int, WL== 8)
+W5<- subset(Int, WL== 15)
 
-# LM3<- lmer(lineStartLand~ condition*sacc_lenC+ Len1C+ Len1C:condition+ (condition|subject)+ (condition|item),
-#            data= dat2)
-# summary(LM3)
+##################
+# png("Plots/Inter_plot.png", width = 1600, height = 1200, res = 300)
+# par(mar = rep(2, 4))
 
+plot(W1$LP, W1$fit, col= "burlywood3" , pch= 16, cex= 3, ylim= c(4,8.5), family= "serif",
+     xlab= "Launch position (char.)", ylab=  "Landing position (from start of new line)",
+     cex.lab=1.5, cex.axis= 1.3)
+lines(W1$LP, W1$fit, col= "burlywood3", lwd=3)
+text(W1$LP, W1$fit+0.004, "2", font= 2, col= "white")
+
+###
+points(W2$LP, W2$fit, col= "darkorange" , pch= 16, cex= 3)
+lines(W2$LP, W2$fit, col= "darkorange", lwd=3)
+text(W2$LP, W2$fit+0.004, "4", font= 2, col= "white")
+
+###
+points(W3$LP, W3$fit, col= "darkgreen" , pch= 16, cex= 3)
+lines(W3$LP, W3$fit, col= "darkgreen", lwd=3)
+text(W3$LP, W3$fit+0.004, "6", font= 2, col= "white")
+
+###
+points(W4$LP, W4$fit, col= "darkblue" , pch= 16, cex= 3)
+lines(W4$LP, W4$fit, col= "darkblue", lwd=3)
+text(W4$LP, W4$fit+0.004, "8", font= 2, col= "white")
+
+###
+points(W5$LP, W5$fit, col= "darkorchid" , pch= 16, cex= 3)
+lines(W5$LP, W5$fit, col= "darkorchid", lwd=3)
+text(W5$LP, W5$fit+0.004, "15", font= 2, col= "white")
+
+legend(65, 5.8, legend=c("2", "4", "6", "8", "15"), lwd=3,
+       col=c("burlywood3", "darkorange", "darkgreen", "darkblue", "darkorchid"), lty= rep(1, 5), cex=1,
+       title= "Word length", bty = "n")
+
+# dev.off()
 
 ###### Return sweep probability: 
 
@@ -256,7 +316,7 @@ GM2<- glmer(undersweep ~ condition *scale(lineStartLand)  + (1|subject)+ (1|item
 summary(GM2)
 round(coef(summary(GM2)),3)
 
-plot(effect('sacc_lenC', GM2))
+plot(effect('launchC', GM2))
 
 plot(effect('condition', GM2), main= "Effect of bolding on undersweep probability",
      ylab= "Probability of undersweep")
