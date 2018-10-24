@@ -188,6 +188,23 @@ dat2$Len2C<- scale(dat2$Len2)
 # from the beginning of the text margin:
 dat2$launch<- abs(dat2$priorX- dat2$StartLineX)
 dat2$launchC<- scale(dat2$launch)
+dat2$lineStartLandC<- scale(dat2$lineStartLand)
+
+
+# exclude 3 outlier cases where participants landed too far to the right of the line start:
+library(vioplot)
+pallete<- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+# overall ES:
+png('Plots/LandPos_outliers.png', width = 1600, height = 2000, units = "px", res = 300)
+plot(1, 1,  ylim = range(dat2$lineStartLand), type = 'n', xlab = 'Return sweep fixations',
+     ylab = 'Landing position from start of new line (char.)',
+     xaxt = 'n', family="serif", cex.lab=1.5, cex.axis=1.5)
+vioplot(dat2$lineStartLand, col= pallete[2], add=T) 
+rect(xleft = 0.9, ybottom = 55, xright = 1.1, ytop = 67, col = NA, border = "darkred", lwd=1.8 )
+dev.off()
+
+dat2<- dat2[-which(dat2$lineStartLand> 55), ]
 
 
 # Model: return sweep launch site as a function of experimental condition:
@@ -204,8 +221,8 @@ summary(LSM)
 
 # Model: new line landing position
 contrasts(dat2$condition)
-dat2$undersweep<- as.factor(dat2$undersweep)
-contrasts(dat2$undersweep)
+#dat2$undersweep<- as.factor(dat2$undersweep)
+#contrasts(dat2$undersweep)
 
 if(!file.exists("Models/LM2.Rda")){
   LM2<- lmer(lineStartLand~ condition*launchC*Len1C*Len2C+ (condition|subject)+ (condition|item),
@@ -230,6 +247,8 @@ plot(effect('condition', LM2), ylab= "Landing position (number of characters the
 plot(effect('launchC', LM2))
 plot(effect('launchC:Len1C', LM2))
 
+
+#### Interaction plot:
 Int<- effect('launchC:Len1C', LM2)
 Int<- as.data.frame(Int)
 
@@ -299,32 +318,29 @@ legend(65, 5.8, legend=c("2", "4", "6", "8", "15"), lwd=3,
 
 # dev.off()
 
-###### Return sweep probability: 
 
+
+###### Return sweep probability:
+# here we don't estimate correlation parameters to achieve convergence
 if(!file.exists("Models/GM2.Rda")){
-  GM2<- glmer(undersweep ~ condition * sacc_lenC  + (condition||subject)+ (condition||item),
-              family= binomial, data= dat2)
+  GM2<- glmer(undersweep ~ condition*launchC*lineStartLandC + (condition||subject)+ (condition||item),
+              family= binomial, data= dat2)#, glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 1000000)))
   save(GM2, file= "Models/GM2.Rda")
 }else{
   load("Models/GM2.Rda")
 }
 
-GM2<- glmer(undersweep ~ condition *scale(lineStartLand)  + (1|subject)+ (1|item),
-            family= binomial, data= dat2)
-# Landing position+ launch site
-
 summary(GM2)
 round(coef(summary(GM2)),3)
+write.csv(round(coef(summary(GM2)),3), "Models/GM2.csv")
 
 plot(effect('launchC', GM2))
 
 plot(effect('condition', GM2), main= "Effect of bolding on undersweep probability",
      ylab= "Probability of undersweep")
 
-plot(effect('condition:sacc_lenC', GM2), main= "Effect of bolding on undersweep probability",
-     ylab= "Probability of undersweep")
-
-
+plot(effect('condition:launchC', GM2))
+plot(effect('condition:launchC:lineStartLandC ', GM2))
 
 
 ### Word-level analysis (on first word on the line):

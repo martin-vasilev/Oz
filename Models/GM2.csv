@@ -1,0 +1,9 @@
+"","Estimate","Std. Error","z value","Pr(>|z|)"
+"(Intercept)",0.734,0.202,3.634,0
+"conditionBold",-0.062,0.091,-0.684,0.494
+"launchC",0.609,0.044,13.961,0
+"lineStartLandC",1.946,0.079,24.704,0
+"conditionBold:launchC",0.111,0.062,1.805,0.071
+"conditionBold:lineStartLandC",0.192,0.111,1.737,0.082
+"launchC:lineStartLandC",-0.096,0.067,-1.427,0.154
+"conditionBold:launchC:lineStartLandC",0.264,0.09,2.924,0.003
