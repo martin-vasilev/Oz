@@ -192,20 +192,20 @@ dat2$lineStartLandC<- scale(dat2$lineStartLand)
 
 
 # exclude 3 outlier cases where participants landed too far to the right of the line start:
-library(vioplot)
-pallete<- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
-# overall ES:
-png('Plots/LandPos_outliers.png', width = 1600, height = 2000, units = "px", res = 300)
-plot(1, 1,  ylim = range(dat2$lineStartLand), type = 'n', xlab = 'Return sweep fixations',
-     ylab = 'Landing position from start of new line (char.)',
-     xaxt = 'n', family="serif", cex.lab=1.5, cex.axis=1.5)
-vioplot(dat2$lineStartLand, col= pallete[2], add=T) 
-rect(xleft = 0.9, ybottom = 55, xright = 1.1, ytop = 67, col = NA, border = "darkred", lwd=1.8 )
-dev.off()
-
-dat2<- dat2[-which(dat2$lineStartLand> 55), ]
-
+# library(vioplot)
+# pallete<- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+# 
+# # overall ES:
+# png('Plots/LandPos_outliers.png', width = 1600, height = 2000, units = "px", res = 300)
+# plot(1, 1,  ylim = range(dat2$lineStartLand), type = 'n', xlab = 'Return sweep fixations',
+#      ylab = 'Landing position from start of new line (char.)',
+#      xaxt = 'n', family="serif", cex.lab=1.5, cex.axis=1.5)
+# vioplot(dat2$lineStartLand, col= pallete[2], add=T) 
+# rect(xleft = 0.9, ybottom = 55, xright = 1.1, ytop = 67, col = NA, border = "darkred", lwd=1.8 )
+# dev.off()
+# 
+# dat2<- dat2[-which(dat2$lineStartLand> 55), ]
+# 
 
 # Model: return sweep launch site as a function of experimental condition:
 
@@ -243,6 +243,8 @@ write.csv(round(coef(summary(LM2)),3), "Models/LM2.csv")
 
 plot(effect('condition', LM2), ylab= "Landing position (number of characters the from line start)",
      main= "Effect of bolding on return sweep landing position")
+
+plot(effect('launchC', LM2))
 
 plot(effect('launchC', LM2))
 plot(effect('launchC:Len1C', LM2))
@@ -323,7 +325,7 @@ legend(65, 5.8, legend=c("2", "4", "6", "8", "15"), lwd=3,
 ###### Return sweep probability:
 # here we don't estimate correlation parameters to achieve convergence
 if(!file.exists("Models/GM2.Rda")){
-  GM2<- glmer(undersweep ~ condition*launchC*lineStartLandC + (condition||subject)+ (condition||item),
+  GM2<- glmer(undersweep ~ condition*launchC + (condition|subject)+ (1|item),
               family= binomial, data= dat2)#, glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 1000000)))
   save(GM2, file= "Models/GM2.Rda")
 }else{
@@ -334,13 +336,104 @@ summary(GM2)
 round(coef(summary(GM2)),3)
 write.csv(round(coef(summary(GM2)),3), "Models/GM2.csv")
 
+# main effects:
 plot(effect('launchC', GM2))
+plot(effect('condition ', GM2))
 
-plot(effect('condition', GM2), main= "Effect of bolding on undersweep probability",
-     ylab= "Probability of undersweep")
+GInter<- as.data.frame(effect('condition:launchC:lineStartLandC ', GM2))
 
-plot(effect('condition:launchC', GM2))
-plot(effect('condition:launchC:lineStartLandC ', GM2))
+LP<- c(0, 58, 66, 69, 77)
+GInter$LP<- NA
+GInter$LP[which(GInter$launchC== -3.00)]<- LP[1]
+GInter$LP[which(GInter$launchC== -2.00)]<- LP[2]
+GInter$LP[which(GInter$launchC== -0.90)]<- LP[3]
+GInter$LP[which(GInter$launchC== 0.03)]<- LP[4]
+GInter$LP[which(GInter$launchC== 1.00)]<- LP[5]
+
+LNDP<- c(-5, 4, 6, 9, 55) 
+GInter$LND<- NA
+GInter$LND[which(GInter$lineStartLandC== -3.0)]<- LNDP[1]
+GInter$LND[which(GInter$lineStartLandC== 0.7)]<- LNDP[2]
+GInter$LND[which(GInter$lineStartLandC== 4.0)]<- LNDP[3]
+GInter$LND[which(GInter$lineStartLandC== 7.0)]<- LNDP[4]
+GInter$LND[which(GInter$lineStartLandC== 10.0)]<- LNDP[5]
+
+NL1<- subset(GInter, condition== "Normal" & LP== 0)
+NL2<- subset(GInter, condition== "Normal" & LP== 58)
+NL3<- subset(GInter, condition== "Normal" & LP== 66)
+NL4<- subset(GInter, condition== "Normal" & LP== 69)
+NL5<- subset(GInter, condition== "Normal" & LP== 77)
+
+BL1<- subset(GInter, condition== "Bold" & LP== 0)
+BL2<- subset(GInter, condition== "Bold" & LP== 58)
+BL3<- subset(GInter, condition== "Bold" & LP== 66)
+BL4<- subset(GInter, condition== "Bold" & LP== 69)
+BL5<- subset(GInter, condition== "Bold" & LP== 77)
+
+#### Plot:
+
+layout(mat = matrix(c(1,2),nrow = 1,ncol = 2,byrow = TRUE))#,heights = c(0.5, 0.5, 0.5))
+#par(mar=c(4,4,3,4))
+
+plot(NL1$LND, NL1$fit, col= "burlywood3" , pch= 16, cex= 3, ylim= c(0, 1), xlim= c(-7, 11), family= "serif",
+     xlab= "Landing position from beginning of line (char.)", ylab=  "Probability of under-sweep fixation",
+     cex.lab=1.5, cex.axis= 1.3, main= "Normal")
+lines(NL1$LND, NL1$fit, col= "burlywood3", lwd=3)
+text(NL1$LND, NL1$fit+0.004, "0", font= 2, col= "white")
+
+###
+points(NL2$LND, NL2$fit, col= "darkorange" , pch= 16, cex= 3)
+lines(NL2$LND, NL2$fit, col= "darkorange", lwd=3)
+text(NL2$LND, NL2$fit+0.004, "58", font= 2, col= "white")
+
+###
+points(NL3$LND, NL3$fit, col= "darkgreen" , pch= 16, cex= 3)
+lines(NL3$LND, NL3$fit, col= "darkgreen", lwd=3)
+text(NL3$LND, NL3$fit+0.004, "66", font= 2, col= "white")
+
+###
+points(NL4$LND, NL4$fit, col= "darkblue" , pch= 16, cex= 3)
+lines(NL4$LND, NL4$fit, col= "darkblue", lwd=3)
+text(NL4$LND, NL4$fit+0.004, "69", font= 2, col= "white")
+
+###
+points(NL5$LND, NL5$fit, col= "darkorchid" , pch= 16, cex= 3)
+lines(NL5$LND, NL5$fit, col= "darkorchid", lwd=3)
+text(NL5$LND, NL5$fit+0.004, "77", font= 2, col= "white")
+
+######
+# Bold
+
+plot(BL1$LND, BL1$fit, col= "burlywood3" , pch= 16, cex= 3, ylim= c(0, 1), xlim= c(-7, 11), family= "serif",
+     xlab= "Landing position from beginning of line (char.)", ylab=  "Probability of under-sweep fixation",
+     cex.lab=1.5, cex.axis= 1.3, main= "Bold")
+lines(BL1$LND, BL1$fit, col= "burlywood3", lwd=3)
+text(BL1$LND, BL1$fit+0.004, "0", font= 2, col= "white")
+
+###
+points(BL2$LND, BL2$fit, col= "darkorange" , pch= 16, cex= 3)
+lines(BL2$LND, BL2$fit, col= "darkorange", lwd=3)
+text(BL2$LND, BL2$fit+0.004, "58", font= 2, col= "white")
+
+###
+points(BL3$LND, BL3$fit, col= "darkgreen" , pch= 16, cex= 3)
+lines(BL3$LND, BL3$fit, col= "darkgreen", lwd=3)
+text(BL3$LND, BL3$fit+0.004, "66", font= 2, col= "white")
+
+###
+points(BL4$LND, BL4$fit, col= "darkblue" , pch= 16, cex= 3)
+lines(BL4$LND, BL4$fit, col= "darkblue", lwd=3)
+text(BL4$LND, BL4$fit+0.004, "69", font= 2, col= "white")
+
+###
+points(BL5$LND, BL5$fit, col= "darkorchid" , pch= 16, cex= 3)
+lines(BL5$LND, BL5$fit, col= "darkorchid", lwd=3)
+text(BL5$LND, BL5$fit+0.004, "77", font= 2, col= "white")
+
+
+legend(3.5, 0.35, legend=c("0", "58", "66", "69", "77"), lwd=3,
+       col=c("burlywood3", "darkorange", "darkgreen", "darkblue", "darkorchid"), lty= rep(1, 5), cex=1,
+       title= "Launch Position", bty = "n")
 
 
 ### Word-level analysis (on first word on the line):
