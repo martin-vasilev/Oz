@@ -38,8 +38,11 @@ levels(dat$condition)<- c("Normal","Bold")
 dat$item <- factor(dat$item)
 
 # remove outliers:
-out<- which(dat$fixduration >= 800)
+out<- which(dat$fixduration >= 1000)
 cat(paste(round((length(out)/nrow(dat))*100, 3)), "% of fixations removed as outliers")
+outliers<- dat[out,]
+a<-table(outliers$FixType)
+
 dat<- dat[-out, ]
 
 
@@ -120,11 +123,11 @@ p <- ggplot(dat1, aes(x=condition, y=fixduration, fill= condition)) +
           strip.background = element_rect(fill="#F5F7F7", colour="black", size=1.5),
           legend.key = element_rect(colour = "#000000", size=1),
           plot.title = element_text(size = 20))+
-  scale_y_continuous(breaks = c(100, 200, 300, 400, 500, 600, 700, 800))+
+  scale_y_continuous(breaks = c(100, 200, 300, 400, 500, 600, 700, 800, 900, 1000))+
   stat_summary(fun.y=mean, geom="point", shape=16, color= "darkred", size=2)+
     xlab("Condition")+ ylab("Fixation duration") +ggtitle("Fixation type"); p
-ggsave(p, filename = "Plots/FixbyType.pdf", width = 12, height = 7)
-ggsave(p, filename = "Plots/FixbyType.png", width = 12, height = 7, dpi= 300)
+ggsave(p, filename = "Plots/FixbyType.pdf", width = 12, height = 8)
+ggsave(p, filename = "Plots/FixbyType.png", width = 12, height = , dpi= 300)
   
 
 # Model:
@@ -225,21 +228,20 @@ contrasts(dat2$condition)
 #contrasts(dat2$undersweep)
 
 if(!file.exists("Models/LM2.Rda")){
-  LM2<- lmer(lineStartLand~ condition*launchC*Len1C*Len2C+ (condition|subject)+ (condition|item),
+  LM2<- lmer(lineStartLand~ condition*launchC*Len1C+ (condition|subject)+ (condition|item),
              data= dat2)
   save(LM2, file= "Models/LM2.Rda")
 }else{
   load("Models/LM2.Rda")
 }
 
-# launch site instead of sacc_len
-# subtract priorX - line start (next line)
-
 summary(LM2)
 round(coef(summary(LM2)),3)
 
 write.csv(round(coef(summary(LM2)),3), "Models/LM2.csv")
 
+
+effect('condition', LM2)
 
 plot(effect('condition', LM2), ylab= "Landing position (number of characters the from line start)",
      main= "Effect of bolding on return sweep landing position")
@@ -285,11 +287,11 @@ W4<- subset(Int, WL== 8)
 W5<- subset(Int, WL== 15)
 
 ##################
-# png("Plots/Inter_plot.png", width = 1600, height = 1200, res = 300)
+png("Plots/Inter_plot.png", width = 2400, height = 2000, res = 300)
 # par(mar = rep(2, 4))
 
 plot(W1$LP, W1$fit, col= "burlywood3" , pch= 16, cex= 3, ylim= c(4,8.5), family= "serif",
-     xlab= "Launch position (char.)", ylab=  "Landing position (from start of new line)",
+     xlab= "Launch position (char.)", ylab=  "Landing position (char.)",
      cex.lab=1.5, cex.axis= 1.3)
 lines(W1$LP, W1$fit, col= "burlywood3", lwd=3)
 text(W1$LP, W1$fit+0.004, "2", font= 2, col= "white")
@@ -314,11 +316,11 @@ points(W5$LP, W5$fit, col= "darkorchid" , pch= 16, cex= 3)
 lines(W5$LP, W5$fit, col= "darkorchid", lwd=3)
 text(W5$LP, W5$fit+0.004, "15", font= 2, col= "white")
 
-legend(65, 5.8, legend=c("2", "4", "6", "8", "15"), lwd=3,
+legend(65, 6.2, legend=c("2", "4", "6", "8", "15"), lwd=3,
        col=c("burlywood3", "darkorange", "darkgreen", "darkblue", "darkorchid"), lty= rep(1, 5), cex=1,
        title= "Word length", bty = "n")
 
-# dev.off()
+dev.off()
 
 
 
@@ -335,6 +337,8 @@ if(!file.exists("Models/GM2.Rda")){
 summary(GM2)
 round(coef(summary(GM2)),3)
 write.csv(round(coef(summary(GM2)),3), "Models/GM2.csv")
+
+effect('condition ', GM2)
 
 # main effects:
 plot(effect('launchC', GM2))
