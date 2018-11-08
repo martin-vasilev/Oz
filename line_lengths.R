@@ -41,3 +41,7 @@ parafovea<- 2/visdeg
 hist(Line_length, breaks = 30, xlim= c(0, 100), xlab= "Line length (in char.)",
      col= "steelblue", main= "", family= "serif", cex.lab= 1.4, cex.axis=1.2)
 abline(v= parafovea, col= "darkred", lwd=2)
+
+range(Line_length)
+mean(Line_length)
+sd(Line_length)

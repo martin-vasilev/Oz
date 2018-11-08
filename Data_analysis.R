@@ -212,12 +212,12 @@ dat2$lineStartLandC<- scale(dat2$lineStartLand)
 
 # Model: return sweep launch site as a function of experimental condition:
 
-if(!file.exists("Models/LM2.Rda")){
+if(!file.exists("Models/LSM.Rda")){
   LSM<- lmer(launch~ condition+ (condition|subject)+ (condition|item), REML= T,
              data= dat2)
-  save(LSM, file= "Models/LM2.Rda")
+  save(LSM, file= "Models/LSM.Rda")
 }else{
-  load("Models/LM2.Rda")
+  load("Models/LSM.Rda")
 }
 summary(LSM)
 
@@ -339,6 +339,9 @@ round(coef(summary(GM2)),3)
 write.csv(round(coef(summary(GM2)),3), "Models/GM2.csv")
 
 effect('condition ', GM2)
+
+
+plot(effect('launchC:Len1C', GM2))
 
 # main effects:
 plot(effect('launchC', GM2))
