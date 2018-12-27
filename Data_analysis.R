@@ -65,6 +65,40 @@ dat1$FixType<- factor(dat1$FixType, levels = c("intra-line", "line-final", "accu
 contrasts(dat1$FixType)
 
 
+# recalculate intra-line fixations to include only first-pass ones:
+
+datNew<- NULL
+dat1$secPass<- NA
+currLine= 0
+
+for(i in 1:length(unique(dat1$subject))){
+  n<- subset(dat1, subject== i)
+  
+  nitems<- as.numeric(as.character(unique(n$item)))
+  
+  for(j in 1:length(nitems)){
+    m<- subset(n, item== nitems[j])
+    currLine= 0
+    
+    for(k in 1:nrow(m)){
+      if(m$line[k]>currLine){
+        currLine= m$line[k]
+      }
+      if(m$line[k]< currLine){
+        m$secPass[k]<- 1
+      }else{
+        m$secPass[k]<- 0
+      }
+    }
+    datNew<- rbind(datNew, m)
+  }
+}
+
+datNew<- subset(datNew, secPass==0)
+datNew$secPass<- NULL
+dat1<- datNew; rm(datNew)
+
+
 # Comprehension accuracy:
 
 # Note: questions 1-5 are from "Dorothy" and questions 6-10 are from "Tiktok".
@@ -238,7 +272,7 @@ if(!file.exists("Models/LM2.Rda")){
 summary(LM2)
 round(coef(summary(LM2)),3)
 
-write.csv(round(coef(summary(LM2)),3), "Models/LM2.csv")
+write.csv2(round(coef(summary(LM2)),3), "Models/LM2.csv")
 
 
 effect('condition', LM2)
@@ -321,6 +355,25 @@ legend(65, 6.2, legend=c("2", "4", "6", "8", "15"), lwd=3,
        title= "Word length", bty = "n")
 
 dev.off()
+
+
+#### Re-reun landing position model, but include only accurate sweeps:
+
+dat2_acc<- subset(dat2, FixType== "accurate-sweep")
+
+if(!file.exists("Models/LM2v2.Rda")){
+  LM2v2<- lmer(lineStartLand~ condition*launchC*Len1C+ (condition|subject)+ (condition|item),
+             data= dat2_acc)
+  save(LM2v2, file= "Models/LM2v2.Rda")
+}else{
+  load("Models/LM2v2.Rda")
+}
+
+summary(LM2v2)
+round(coef(summary(LM2v2)),3)
+
+write.csv2(round(coef(summary(LM2v2)),3), "Models/LM2v2.csv")
+
 
 
 
@@ -584,8 +637,30 @@ round(coef(summary(WM2)),3)
 write.csv(round(coef(summary(WM2)),3), "Models/WM2.csv")
       
 
-# separate model;
-# launch site: predicted by condition
+############ Plot landing position densities by subject:
+
+
+# Plot:
+p <- ggplot(dat2, aes(x=condition, y= lineStartLand, fill= subject)) + 
+  # geom_boxplot(width=0.25, outlier.color = "#4c5159", #outlier.color= "#777777", 
+  #              outlier.size= 1, outlier.shape=8, coef= 4)+
+  geom_violin(weight= 2, alpha= 0.3, scale= "count") + 
+  theme_bw(22) + 
+ # scale_fill_brewer(palette="Accent")+ scale_color_brewer(palette="Accent")+
+  theme(panel.grid = element_line(colour = "#ededed", size=0.5), 
+        axis.line = element_line(colour = "black", size=1),
+        panel.border = element_rect(colour = "black", size=1, fill = NA),
+        legend.position="none", plot.title = element_text(hjust = 0.5))+#facet_grid(.~ subject) + 
+  theme(strip.text.x = element_text(size = 20,  face="bold",family="serif"),
+        strip.background = element_rect(fill="#F5F7F7", colour="black", size=1.5),
+        legend.key = element_rect(colour = "#000000", size=1),
+        plot.title = element_text(size = 20), legend.position="right")+
+  # scale_y_continuous(breaks = c(100, 200, 300, 400, 500, 600, 700, 800, 900, 1000))+
+  #stat_summary(fun.y=mean, geom="point", shape=16, color= "darkred", size=2)+
+  xlab("Condition")+ ylab("Landing position (char)") +
+  ggtitle("Landing position distributions by subject"); p
+ggsave(p, filename = "Plots/Land_pos_by_sub.pdf", width = 12, height = 8)
+
 
 
 
@@ -640,67 +715,67 @@ GMplot<- GMplot + geom_jitter(data= mGM, aes(color= condition, shape= condition)
 
 
 ######################################################################################################################
-
-p2 <- qplot(fixduration, data = p, facets = FixType ~ ., linetype = condition, geom = "density", xlim = c(0,500)) + xlab("Fixation Duration")
-p2
-ggsave(file = "Psycho17fixtype.pdf", dpi = 1200)
-
-fixtype.model = lmer(data = p, fixduration ~ FixType * condition + (1 + FixType + condition| subject) + (1 + FixType + condition| item))
-summary(fixtype.model)
-
-pdf(file = "FixTypeEffects.pdf", width = 9, height = 7)
-plot(effect("FixType", fixtype.model),main = NULL, grid = TRUE, colors = "black", xlab = " ", ylim = c(120,300), ylab = "Fixation Duration")
-dev.off()
-
-p <- p[p$lineinitial == 1,]
-str(p)
-p3 <- qplot(Rserror, data = p, linetype = condition, geom = "density", xlim = c(0,20)) + xlab("Return-Sweep Error")
-p3
-ggsave(file = "OZRSerror.pdf", dpi = 1200)
-
-p4 <- qplot(currentX, data = p, linetype = condition, geom = "density", xlim = c(0,30)) + xlab("Return-Sweep Landing Site")
-p4
-ggsave(file = "RSLand.pdf", dpi = 1200)
-
-Undersweep.model = glmer(data = p, Undersweep ~ condition + (1 + condition | subject) + (1 + condition | item), family = binomial(link = "logit"))
-summary(Undersweep.model)
-
-pdf(file = "UndersweepEffects.pdf", width = 7, height = 7)
-plot(effect("condition", Undersweep.model),main = NULL, grid = TRUE, colors = "black", xlab = "Line Initial Word", ylab = "Undersweep Likelihood")
-dev.off()
-
-#Return sweep error in characters
-lmRSE = lmer(data = p, Rserror ~ condition + (1 + condition | subject) + (1 + condition | item))
-summary(lmRSE)
-
-q <- read.csv("TimOz.csv", na.strings = "na")
-q <- q[q$Line1stFix == 1,]
-#q <- q[q$Undersweep2 == 0,]
-str(q)
-
-q$item <- factor(q$item)
-q$condition <- factor(q$condition)
-levels(q$condition) <- c("Normal","Bold")
-
-q3 <- qplot(RS_error, data = q, linetype = condition, geom = "density", xlim = c(0,25)) + xlab("Return-Sweep Error")
-q3
-ggsave(file = "OZRSerror2.pdf", dpi = 1200)
-
-Undersweep2.model = glmer(data = q, Undersweep2 ~ condition + (1 + condition | subject) + (1 + condition | item), family = binomial(link = "logit"))
-summary(Undersweep2.model)
-
-pdf(file = "Undersweep2Effects.pdf", width = 7, height = 7)
-plot(effect("condition", Undersweep2.model), main = NULL, grid = TRUE, colors = "black", xlab = "Line Initial Word", ylab = "Undersweep Likelihood")
-dev.off()
-
-#Return sweep error in characters
-lmRSE2 = lmer(data = q, RS_error ~ condition + (1 + condition | subject) + (1 + condition | item))
-summary(lmRSE2)
-
-lmLand = lmer(data = q, lineland ~ condition * Length + (1 + condition | subject) + (1 + condition | item))
-summary(lmLand)
-
-q <- q[q$wordnum == 2,]
-q4 <- qplot(X4OVP, data = q, linetype = condition, geom = "density", xlim = c(0,1)) + xlab("Landing Position Percent")
-q4
-ggsave(file = "OZRSerror2.pdf", dpi = 1200)
+# 
+# p2 <- qplot(fixduration, data = p, facets = FixType ~ ., linetype = condition, geom = "density", xlim = c(0,500)) + xlab("Fixation Duration")
+# p2
+# ggsave(file = "Psycho17fixtype.pdf", dpi = 1200)
+# 
+# fixtype.model = lmer(data = p, fixduration ~ FixType * condition + (1 + FixType + condition| subject) + (1 + FixType + condition| item))
+# summary(fixtype.model)
+# 
+# pdf(file = "FixTypeEffects.pdf", width = 9, height = 7)
+# plot(effect("FixType", fixtype.model),main = NULL, grid = TRUE, colors = "black", xlab = " ", ylim = c(120,300), ylab = "Fixation Duration")
+# dev.off()
+# 
+# p <- p[p$lineinitial == 1,]
+# str(p)
+# p3 <- qplot(Rserror, data = p, linetype = condition, geom = "density", xlim = c(0,20)) + xlab("Return-Sweep Error")
+# p3
+# ggsave(file = "OZRSerror.pdf", dpi = 1200)
+# 
+# p4 <- qplot(currentX, data = p, linetype = condition, geom = "density", xlim = c(0,30)) + xlab("Return-Sweep Landing Site")
+# p4
+# ggsave(file = "RSLand.pdf", dpi = 1200)
+# 
+# Undersweep.model = glmer(data = p, Undersweep ~ condition + (1 + condition | subject) + (1 + condition | item), family = binomial(link = "logit"))
+# summary(Undersweep.model)
+# 
+# pdf(file = "UndersweepEffects.pdf", width = 7, height = 7)
+# plot(effect("condition", Undersweep.model),main = NULL, grid = TRUE, colors = "black", xlab = "Line Initial Word", ylab = "Undersweep Likelihood")
+# dev.off()
+# 
+# #Return sweep error in characters
+# lmRSE = lmer(data = p, Rserror ~ condition + (1 + condition | subject) + (1 + condition | item))
+# summary(lmRSE)
+# 
+# q <- read.csv("TimOz.csv", na.strings = "na")
+# q <- q[q$Line1stFix == 1,]
+# #q <- q[q$Undersweep2 == 0,]
+# str(q)
+# 
+# q$item <- factor(q$item)
+# q$condition <- factor(q$condition)
+# levels(q$condition) <- c("Normal","Bold")
+# 
+# q3 <- qplot(RS_error, data = q, linetype = condition, geom = "density", xlim = c(0,25)) + xlab("Return-Sweep Error")
+# q3
+# ggsave(file = "OZRSerror2.pdf", dpi = 1200)
+# 
+# Undersweep2.model = glmer(data = q, Undersweep2 ~ condition + (1 + condition | subject) + (1 + condition | item), family = binomial(link = "logit"))
+# summary(Undersweep2.model)
+# 
+# pdf(file = "Undersweep2Effects.pdf", width = 7, height = 7)
+# plot(effect("condition", Undersweep2.model), main = NULL, grid = TRUE, colors = "black", xlab = "Line Initial Word", ylab = "Undersweep Likelihood")
+# dev.off()
+# 
+# #Return sweep error in characters
+# lmRSE2 = lmer(data = q, RS_error ~ condition + (1 + condition | subject) + (1 + condition | item))
+# summary(lmRSE2)
+# 
+# lmLand = lmer(data = q, lineland ~ condition * Length + (1 + condition | subject) + (1 + condition | item))
+# summary(lmLand)
+# 
+# q <- q[q$wordnum == 2,]
+# q4 <- qplot(X4OVP, data = q, linetype = condition, geom = "density", xlim = c(0,1)) + xlab("Landing Position Percent")
+# q4
+# ggsave(file = "OZRSerror2.pdf", dpi = 1200)

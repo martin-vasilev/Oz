@@ -1,0 +1,10 @@
+Accurate sweeps only;;;;;;Whole data;;;
+;Estimate;Std. Error;t value;;;;Estimate;Std. Error;t value
+Intercept;5,305;0,365;14,538;;;Intercept;7,175;0,42;17,088
+Bold ;-0,396;0,22;-1,798;;;Bold ;-0,543;0,14;-3,881
+Launch;0,094;0,059;1,591;;;Launch;0,528;0,06;8,799
+W1 Length ;0,058;0,068;0,851;;;W1 Length ;0,013;0,058;0,214
+Bold x Launch;-0,094;0,079;-1,197;;;Bold x Launch;-0,11;0,083;-1,322
+Bold x W1 Length;0,067;0,092;0,724;;;Bold x W1 Length;0,066;0,081;0,805
+Launch x W1 Length ;0,146;0,067;2,175;;;Launch x W1 Length ;0,14;0,07;2,017
+Bold x Launch x W1 Length;-0,106;0,089;-1,185;;;Bold x Launch x W1 Length;-0,026;0,096;-0,271

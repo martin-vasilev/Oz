@@ -18,9 +18,15 @@ files<- c(d, t)
 
 
 Line_length= NULL
+a<- NULL
+item<- NULL 
+nLines<- NULL
 
 for(i in 1:length(files)){ # for each text page..
   text<- readLines(files[i])
+  a<- c(a, length(text))
+  item[i]<- files[i]
+  nLines[i]<- length(text)
   
   for(j in 1:length(text)){ # for each line in text
     Line_length<- c(Line_length, nchar(text[j]))
@@ -28,7 +34,10 @@ for(i in 1:length(files)){ # for each text page..
   
 }
 
-
+db<- data.frame(item, nLines)
+get_num<- function(string){as.numeric(unlist(gsub("[^0-9]", "", unlist(string)), ""))}
+db$item<- get_num(db$item)
+db$item[18:35]= db$item[18:35]+25
 
 ## Line beginings that will fall in parafoveal vision if you are at the end of the
 # current line:
