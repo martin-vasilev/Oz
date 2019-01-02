@@ -321,7 +321,8 @@ W4<- subset(Int, WL== 8)
 W5<- subset(Int, WL== 15)
 
 ##################
-png("Plots/Inter_plot.png", width = 2400, height = 2000, res = 300)
+pdf("Plots/Inter_plot.pdf", width = 8, height = 7.5)
+#png("Plots/Inter_plot.png", width = 2400, height = 2000, res = 300)
 # par(mar = rep(2, 4))
 
 plot(W1$LP, W1$fit, col= "burlywood3" , pch= 16, cex= 3, ylim= c(4,8.5), family= "serif",
@@ -350,7 +351,7 @@ points(W5$LP, W5$fit, col= "darkorchid" , pch= 16, cex= 3)
 lines(W5$LP, W5$fit, col= "darkorchid", lwd=3)
 text(W5$LP, W5$fit+0.004, "15", font= 2, col= "white")
 
-legend(65, 6.2, legend=c("2", "4", "6", "8", "15"), lwd=3,
+legend(65, 5.6, legend=c("2", "4", "6", "8", "15"), lwd=3,
        col=c("burlywood3", "darkorange", "darkgreen", "darkblue", "darkorchid"), lty= rep(1, 5), cex=1,
        title= "Word length", bty = "n")
 
