@@ -161,7 +161,7 @@ p <- ggplot(dat1, aes(x=condition, y=fixduration, fill= condition)) +
   stat_summary(fun.y=mean, geom="point", shape=16, color= "darkred", size=2)+
     xlab("Condition")+ ylab("Fixation duration") +ggtitle("Fixation type"); p
 ggsave(p, filename = "Plots/FixbyType.pdf", width = 12, height = 8)
-ggsave(p, filename = "Plots/FixbyType.png", width = 12, height = , dpi= 300)
+ggsave(p, filename = "Plots/FixbyType.png", width = 12, height = 8, dpi= 300)
   
 
 # Model:
