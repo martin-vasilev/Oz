@@ -358,7 +358,7 @@ legend(65, 5.6, legend=c("2", "4", "6", "8", "15"), lwd=3,
 dev.off()
 
 
-#### Re-reun landing position model, but include only accurate sweeps:
+#### Re-run landing position model, but include only accurate sweeps:
 
 dat2_acc<- subset(dat2, FixType== "accurate-sweep")
 
@@ -379,10 +379,9 @@ write.csv2(round(coef(summary(LM2v2)),3), "Models/LM2v2.csv")
 
 
 ###### Return sweep probability:
-# here we don't estimate correlation parameters to achieve convergence
 if(!file.exists("Models/GM2.Rda")){
   GM2<- glmer(undersweep ~ condition*launchC + (condition|subject)+ (1|item),
-              family= binomial, data= dat2)#, glmerControl(optimizer="bobyqa", optCtrl = list(maxfun = 1000000)))
+              family= binomial, data= dat2)
   save(GM2, file= "Models/GM2.Rda")
 }else{
   load("Models/GM2.Rda")
@@ -663,10 +662,54 @@ p <- ggplot(dat2, aes(x=condition, y= lineStartLand, fill= subject)) +
 ggsave(p, filename = "Plots/Land_pos_by_sub.pdf", width = 12, height = 8)
 
 
+###############################################################################################################################
+
+# Compare landing position after corrective saccade to an accurate-returnsweep saccade:
+
+dat1$corrective<- NA
+
+for(i in 1:nrow(dat1)){
+  if(dat1$FixType[i]== "under-sweep"){
+    dat1$corrective[i+1]<- "corrective"
+  }
+  if(dat1$FixType[i]== "accurate-sweep"){
+    dat1$corrective[i]= "accurate-sweep"
+  }
+}
+
+dat3<- subset(dat1, !is.na(corrective))
+
+# Code landing position from the start of each line:
+dat3$lineStartLand<- dat3$currentX- dat3$StartLineX 
 
 
+Des<- melt(dat3, id=c('subject', 'item', 'condition', "corrective"), 
+            measure=c("lineStartLand") , na.rm=TRUE)
+
+mS<- cast(Des, corrective ~ variable
+          , function(x) c(M=signif(mean(x),3)
+                          , SD= sd(x) ))
 
 
+# Plot:
+p <- ggplot(dat3, aes(x=corrective, y=lineStartLand, fill= corrective)) + 
+  geom_boxplot(width=0.25, outlier.color = "#4c5159", #outlier.color= "#777777", 
+               outlier.size= 1, outlier.shape=8, coef= 4)+
+  geom_violin(weight= 2, alpha= 0.3, scale= "count") + theme_bw(22) + 
+  scale_fill_brewer(palette="Accent")+ scale_color_brewer(palette="Accent")+
+  theme(panel.grid = element_line(colour = "#ededed", size=0.5), 
+        axis.line = element_line(colour = "black", size=1),
+        panel.border = element_rect(colour = "black", size=1, fill = NA),
+        legend.position="none", plot.title = element_text(hjust = 0.5)) + 
+  theme(strip.text.x = element_text(size = 20,  face="bold",family="serif"),
+        strip.background = element_rect(fill="#F5F7F7", colour="black", size=1.5),
+        legend.key = element_rect(colour = "#000000", size=1),
+        plot.title = element_text(size = 20))+
+#  scale_y_continuous(breaks = c(100, 200, 300, 400, 500, 600, 700, 800, 900, 1000))+
+  stat_summary(fun.y=mean, geom="point", shape=16, color= "darkred", size=2)+
+  xlab("Saccade type")+ ylab("Landing position (char.)"); p
+ggsave(p, filename = "Plots/corrective.pdf", width = 8, height = 8)
+ggsave(p, filename = "Plots/corrective.png", width = 8, height = 8, dpi= 300)
 
 
 
@@ -682,37 +725,37 @@ ggsave(p, filename = "Plots/Land_pos_by_sub.pdf", width = 12, height = 8)
 
 
 
-
-FitGM<- subset(dat2, !is.na(sacc_len))
-FitGM$GM2<- fitted(GM2)
-
-a<- effect('condition', GM2)
-DesGM<- melt(FitGM, id=c('subject', 'item', 'condition', 'FixType'), 
-               measure=c('GM2') , na.rm=TRUE)
-
-mGM<- cast(DesGM, condition+subject ~ variable
-             , function(x) c(M=signif(mean(x),3)
-                             , SD= sd(x) ))
-
-
-df<- data.frame(condition= c("Normal", "Bold"), mean= c(0.6305651, 0.5694246), lower= c(0.5496077, 0.4919586),
-                upper= c(0.7047869, 0.6436351))
-df$condition<- factor(df$condition, levels= c("Normal", "Bold"))
-mGM<- as.data.frame(mGM)
-mGM$SE<- (mGM$GM2_SD/sqrt(35))*1.96 # 35 items per sub
-mGM$upper<- mGM$GM2_M- mGM$SE
-mGM$lower<- mGM$GM2_M- mGM$SE
-mGM$SE<- NULL; mGM$GM2_SD<- NULL
-colnames(mGM)<- c("condition", "subject", "mean", "upper", "lower")
-
-GMplot<- ggplot(df, aes(x= condition, y= mean, group=1, ymax = upper, ymin= lower)) +
-         scale_fill_brewer(palette="Dark2")+ scale_colour_brewer(palette="Dark2")+
-         geom_line(size=1.2, color= "darkred")+ theme_classic(22)+ xlab("Condition")+ ylab("p(Return sweep)")+ 
-         geom_ribbon(alpha=0.10, colour=NA, fill= "darkred")+ theme(legend.position = "none")
-GMplot<- GMplot + geom_jitter(data= mGM, aes(color= condition, shape= condition), size=3, width = 0.2)+
-         scale_x_discrete(expand = c(0.1,0.1)); GMplot
-
-
+# 
+# FitGM<- subset(dat2, !is.na(sacc_len))
+# FitGM$GM2<- fitted(GM2)
+# 
+# a<- effect('condition', GM2)
+# DesGM<- melt(FitGM, id=c('subject', 'item', 'condition', 'FixType'), 
+#                measure=c('GM2') , na.rm=TRUE)
+# 
+# mGM<- cast(DesGM, condition+subject ~ variable
+#              , function(x) c(M=signif(mean(x),3)
+#                              , SD= sd(x) ))
+# 
+# 
+# df<- data.frame(condition= c("Normal", "Bold"), mean= c(0.6305651, 0.5694246), lower= c(0.5496077, 0.4919586),
+#                 upper= c(0.7047869, 0.6436351))
+# df$condition<- factor(df$condition, levels= c("Normal", "Bold"))
+# mGM<- as.data.frame(mGM)
+# mGM$SE<- (mGM$GM2_SD/sqrt(35))*1.96 # 35 items per sub
+# mGM$upper<- mGM$GM2_M- mGM$SE
+# mGM$lower<- mGM$GM2_M- mGM$SE
+# mGM$SE<- NULL; mGM$GM2_SD<- NULL
+# colnames(mGM)<- c("condition", "subject", "mean", "upper", "lower")
+# 
+# GMplot<- ggplot(df, aes(x= condition, y= mean, group=1, ymax = upper, ymin= lower)) +
+#          scale_fill_brewer(palette="Dark2")+ scale_colour_brewer(palette="Dark2")+
+#          geom_line(size=1.2, color= "darkred")+ theme_classic(22)+ xlab("Condition")+ ylab("p(Return sweep)")+ 
+#          geom_ribbon(alpha=0.10, colour=NA, fill= "darkred")+ theme(legend.position = "none")
+# GMplot<- GMplot + geom_jitter(data= mGM, aes(color= condition, shape= condition), size=3, width = 0.2)+
+#          scale_x_discrete(expand = c(0.1,0.1)); GMplot
+# 
+# 
 
 
 ######################################################################################################################
