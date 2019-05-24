@@ -768,7 +768,40 @@ ggsave(p, filename = "Plots/Undersweep_prob.png", width = 8, height = 8, dpi= 30
 
 
 
+####### Landing position by Line length:
 
+DesLen<- melt(subset(dat2, Len1<14), id=c('subject', 'item', 'condition', 'Len1'), 
+               measure=c('lineStartLand') , na.rm=TRUE)
+
+mLen<- cast(DesLen, subject+condition+Len1 ~ variable
+             , function(x) c(M=signif(mean(x),3)
+                             , SD= sd(x) ))
+
+
+
+p <- ggplot(mLen, aes(x=Len1, y= lineStartLand_M, fill= condition, group= condition)) + 
+  #  geom_violin(weight= 2, alpha= 0.3, scale= "count") +
+  theme_bw(22) + geom_jitter(mapping = aes(fill= condition), height= 0, width=0.2, size= 2, shape=21,
+                             color= "#4c5159", alpha= 1)+
+  # geom_boxplot(width=0.25, outlier.color = "#4c5159", #outlier.color= "#777777", 
+  #              outlier.size= 1, outlier.shape=8, coef= 4, alpha=0.4, notch = T, notchwidth = 0.5)+
+  scale_fill_brewer(palette="Accent")+ scale_color_brewer(palette="Accent")+
+  theme(panel.grid = element_line(colour = "#ededed", size=0.5), 
+        axis.line = element_line(colour = "black", size=1),
+        panel.border = element_rect(colour = "black", size=1, fill = NA),
+        legend.position="bottom", plot.title = element_text(hjust = 0.5))+ 
+  geom_abline(intercept =  coef(summary(LM2))[1,1], slope = coef(summary(LM2))[4,1], col= "blue", size= 1.2, alpha=0.5)+
+  annotate("text", label = paste("b= ", round(coef(summary(LM2))[4,1],3),
+                                 ", SE= ", round(coef(summary(LM2))[4,2],3),
+                                 ", t= ", round(coef(summary(LM2))[4,3],4), sep= ''), 
+           x = 7, y = 18, size = 4.5, colour = "blue", alpha= 0.7)+
+  scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20))+
+  scale_x_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14))+
+  #  stat_summary(fun.y=mean, geom="point", shape=16, color= "darkred", size=2)+
+  xlab("Length of first word on the line (letters)")+ ylab("Landing position (letters)"); p
+
+
+ggsave(p, filename = "Plots/Land_x_Len.png", width = 12, height = 8, dpi= 300)
 
 ######################################################################################################################
 
