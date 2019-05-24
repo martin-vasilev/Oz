@@ -218,7 +218,6 @@ dat2$sacc_lenC<- scale(dat2$sacc_len)
 
 # scale word length:
 dat2$Len1C<- scale(dat2$Len1)
-dat2$Len2C<- scale(dat2$Len2)
 
 # Launch Site:
 # here, we need to substract the empty region before the start of a line to get the launch site
@@ -228,21 +227,17 @@ dat2$launchC<- scale(dat2$launch)
 dat2$lineStartLandC<- scale(dat2$lineStartLand)
 
 
-# exclude 3 outlier cases where participants landed too far to the right of the line start:
-# library(vioplot)
-# pallete<- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-# 
-# # overall ES:
-# png('Plots/LandPos_outliers.png', width = 1600, height = 2000, units = "px", res = 300)
-# plot(1, 1,  ylim = range(dat2$lineStartLand), type = 'n', xlab = 'Return sweep fixations',
-#      ylab = 'Landing position from start of new line (char.)',
-#      xaxt = 'n', family="serif", cex.lab=1.5, cex.axis=1.5)
-# vioplot(dat2$lineStartLand, col= pallete[2], add=T) 
-# rect(xleft = 0.9, ybottom = 55, xright = 1.1, ytop = 67, col = NA, border = "darkred", lwd=1.8 )
-# dev.off()
-# 
-# dat2<- dat2[-which(dat2$lineStartLand> 55), ]
-# 
+
+#### Descriptive statistics
+DesSacc<- melt(dat2, id=c('subject', 'item', 'condition', 'FixType'), 
+               measure=c('launch', 'lineStartLand', 'undersweep') , na.rm=TRUE)
+
+mSacc<- cast(DesSacc, condition ~ variable
+             , function(x) c(M=signif(mean(x),3)
+                             , SD= sd(x) ))
+write.csv2(mSacc, 'Sacc_descr.csv')
+
+
 
 # Model: return sweep launch site as a function of experimental condition:
 
@@ -713,8 +708,62 @@ ggsave(p, filename = "Plots/corrective.png", width = 8, height = 8, dpi= 300)
 
 
 
+#######################################################################################################################
+
+# New plots (for social media):
+
+DesLand<- melt(dat2, id=c('subject', 'item', 'condition'), 
+               measure=c('lineStartLand') , na.rm=TRUE)
+
+mLand<- cast(DesLand, condition+subject ~ variable
+             , function(x) c(M=signif(mean(x),3)
+                             , SD= sd(x) ))
+
+# Plot:
+p <- ggplot(mLand, aes(x=condition, y=lineStartLand_M, fill= condition, group= condition)) + 
+#  geom_violin(weight= 2, alpha= 0.3, scale= "count") +
+  theme_bw(22) + geom_jitter(mapping = aes(fill= condition), height= 0, width=0.1, size= 2, shape=21,
+                             color= "#4c5159", alpha= 1)+
+  geom_boxplot(width=0.25, outlier.color = "#4c5159", #outlier.color= "#777777", 
+               outlier.size= 1, outlier.shape=8, coef= 4, alpha=0.4, notch = T, notchwidth = 0.5)+
+  scale_fill_brewer(palette="Accent")+ scale_color_brewer(palette="Accent")+
+  theme(panel.grid = element_line(colour = "#ededed", size=0.5), 
+        axis.line = element_line(colour = "black", size=1),
+        panel.border = element_rect(colour = "black", size=1, fill = NA),
+        legend.position="none", plot.title = element_text(hjust = 0.5))+
+  scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14))+
+#  stat_summary(fun.y=mean, geom="point", shape=16, color= "darkred", size=2)+
+  xlab("First word on a line")+ ylab("Landing position (letters)"); p
+#ggsave(p, filename = "Plots/FixbyType.pdf", width = 12, height = 8)
+ggsave(p, filename = "Plots/Land_pos.png", width = 12, height = 8, dpi= 300)
 
 
+
+
+DesCorr<- melt(dat2, id=c('subject', 'item', 'condition'), 
+               measure=c('undersweep') , na.rm=TRUE)
+
+mCorr<- cast(DesCorr, condition+subject ~ variable
+             , function(x) c(M=signif(mean(x),3)
+                             , SD= sd(x) ))
+
+# Plot:
+p <- ggplot(mCorr, aes(x=condition, y=undersweep_M, fill= condition, group= condition)) + 
+  #  geom_violin(weight= 2, alpha= 0.3, scale= "count") +
+  theme_bw(22) + geom_jitter(mapping = aes(fill= condition), height= 0, width=0.1, size= 2, shape=21,
+                             color= "#4c5159", alpha= 1)+
+  geom_boxplot(width=0.25, outlier.color = "#4c5159", #outlier.color= "#777777", 
+               outlier.size= 1, outlier.shape=8, coef= 4, alpha=0.4, notch = T, notchwidth = 0.5)+
+  scale_fill_brewer(palette="Accent")+ scale_color_brewer(palette="Accent")+
+  theme(panel.grid = element_line(colour = "#ededed", size=0.5), 
+        axis.line = element_line(colour = "black", size=1),
+        panel.border = element_rect(colour = "black", size=1, fill = NA),
+        legend.position="none", plot.title = element_text(hjust = 0.5))+
+#  scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 14))+
+  #  stat_summary(fun.y=mean, geom="point", shape=16, color= "darkred", size=2)+
+  xlab("First word on a line")+ ylab("Undersweep probability"); p
+#ggsave(p, filename = "Plots/FixbyType.pdf", width = 12, height = 8)
+ggsave(p, filename = "Plots/Undersweep_prob.png", width = 12, height = 8, dpi= 300)
 
 
 
