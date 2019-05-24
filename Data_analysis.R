@@ -735,7 +735,7 @@ p <- ggplot(mLand, aes(x=condition, y=lineStartLand_M, fill= condition, group= c
 #  stat_summary(fun.y=mean, geom="point", shape=16, color= "darkred", size=2)+
   xlab("First word on a line")+ ylab("Landing position (letters)"); p
 #ggsave(p, filename = "Plots/FixbyType.pdf", width = 12, height = 8)
-ggsave(p, filename = "Plots/Land_pos.png", width = 12, height = 8, dpi= 300)
+ggsave(p, filename = "Plots/Land_pos.png", width = 8, height = 8, dpi= 300)
 
 
 
@@ -763,7 +763,7 @@ p <- ggplot(mCorr, aes(x=condition, y=undersweep_M, fill= condition, group= cond
   #  stat_summary(fun.y=mean, geom="point", shape=16, color= "darkred", size=2)+
   xlab("First word on a line")+ ylab("Undersweep probability"); p
 #ggsave(p, filename = "Plots/FixbyType.pdf", width = 12, height = 8)
-ggsave(p, filename = "Plots/Undersweep_prob.png", width = 12, height = 8, dpi= 300)
+ggsave(p, filename = "Plots/Undersweep_prob.png", width = 8, height = 8, dpi= 300)
 
 
 
