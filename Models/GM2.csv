@@ -1,0 +1,5 @@
+"","Estimate","Std. Error","z value","Pr(>|z|)"
+"(Intercept)",0.535,0.174,3.076,0.002
+"conditionBold",-0.25,0.062,-4.026,0
+"launchC",0.673,0.037,18.122,0
+"conditionBold:launchC",0.02,0.052,0.382,0.703
