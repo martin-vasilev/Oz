@@ -1,6 +1,6 @@
 
 
-# Martin R. Vasilev & Tim Slattery, 2018 
+# Tim Slattery, 2019
 
 rm(list=ls())
 
